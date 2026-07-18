@@ -133,6 +133,23 @@ hardcoding one source's numbers, or (b) clearly label whichever source's
 numbers are used as build-specific estimates tied to a stated baseline
 — matching what both Arsonistic and 또피셜's own posts already say about
 their own numbers.
+**Decision: use 또피셜's Inven table as the accessory substat damage-gain
+source**, not Arsonistic's. **Correction to the reasoning, worth being
+precise about:** it's not that 또피셜's numbers are baseline-*free* —
+they aren't. The table explicitly states baselines per row (Crit
+Rate/Crit Damage: "crit rate 80%, crit damage 250%"; earrings: "Order
+Elixir lv5 + Ardent legendary engraving+"; necklace: specific set +
+quality + elixir level). The actual reason to prefer it: it's **one
+fixed, explicitly-stated, single baseline across a full accessory-slot
+table**, published standalone with its own credibility (215K
+views/55 comments), versus Arsonistic's numbers which are a by-product
+of whatever specific class/build happened to be loaded in their `Calc`
+tab when captured (§3) — less clear what that baseline even was. Neither
+is baseline-free; 또피셜's is just the more legible, consistently-stated
+one. **Still true regardless of source:** these numbers are only exactly
+right for a character actually at that stated baseline (crit rate 80%,
+etc.) — don't present them as universal without carrying that caveat
+forward.
 **Authorship/provenance:** Made by Cracine (Twitch: cracine), crediting
 Reddit user **Skaitavia** for explanations/baseline format, and
 **Portia (포피셜)** and **Riyon (리연)** — Korean community
@@ -494,11 +511,23 @@ more tier/level to build confidence before trusting the formula for tiers
 where we don't have a second reference point.
 ---
 ## 3. Accessory / engraving / bracelet / Ark Grid damage gain
-This is **not** a universal formula — the Arsonistic DPS Calculator derives
-it by full build simulation: it computes your total DPS with a stat/gear
-bonus included, removes it, recomputes, and reports the delta. That's why
-its own docs say "all numbers are only comparable between builds on the
-same class/skill setup."
+**Decision: use 또피셜's Inven accessory table (§0) as the accessory
+substat damage-gain source**, not the Arsonistic table below. Both are
+baseline-dependent, not universal — 또피셜's is preferred because it
+states one explicit, consistent baseline per row (crit rate 80%/crit
+dmg 250%, specific elixir/engraving levels) across a full accessory
+table published standalone, versus Arsonistic's numbers being a
+byproduct of whatever build happened to be loaded in their `Calc` tab
+with an unclear baseline. See §0 for the full 또피셜 table and the
+cross-check against Arsonistic's numbers below (close agreement on
+Additional Damage/Attack Power%, real divergence on crit-related stats
+— explained there by baseline crit rate differences).
+**Arsonistic table kept for reference/cross-check, not the chosen
+source.** This is **not** a universal formula — the Arsonistic DPS
+Calculator derives it by full build simulation: it computes your total
+DPS with a stat/gear bonus included, removes it, recomputes, and reports
+the delta. That's why its own docs say "all numbers are only comparable
+between builds on the same class/skill setup."
 Captured table (from the `Acc` tab, `EffData`-linked — necklace/earring/
 ring substat real damage-gain %, by quality tier and combined-piece tier):
 | Bonus (raw stat, Low/Mid/High) | Low | Mid | High | LL | ML | MM | HL | HM | HH |
@@ -676,10 +705,11 @@ yet solved. Don't force-fit it without checking the units line up.
    entirely — most players have enough naturally, not worth modeling as
    a gate.
 5. Extract the Arsonistic sheet's `Calc`/`EffData` DPS formula if
-   per-class/build-specific numbers are needed (vs. using their pre-baked
-   table as-is). **No longer a blocker for §5/gems** — gem ranking uses
-   user-picked damage-share buckets instead (see item 9), so this is back
-   to being a "nice to have" for accessory-number accuracy only.
+   per-class/build-specific numbers are needed. **Lower priority now,
+   see §3:** 또피셜's table is the chosen accessory damage-gain source,
+   not Arsonistic's — this extraction would only matter for a future
+   "compute fresh numbers for my exact build" feature, not for the
+   baseline accessory ranking.
 6. Confirm CORS behavior fetching Shizukaziye's `data/*.json` cross-origin;
    plan a relay if blocked.
 7. Work out the unit conversion from astrogem `cut`/`expSpend`/`expScore`
