@@ -53,14 +53,59 @@ tier-specific — only the inputs (`p`, material costs, `G`) change per tier.
 Confirmed: **no separate gold/success-rate cost** — it only consumes
 materials to unlock going past +20. Treat it as a flat one-time material
 cost per gear piece, not a probabilistic event.
+**Tension to resolve:** the per-level average-cost table below (+21 to
++25) shows smoothly scaling costs, continuous with +18 through +20, not a
+one-time flat bump at the +20→+21 boundary. Either the breakthrough
+material cost is small enough to not visibly break the curve, or it's
+already baked into these per-level averages and "no separate cost" refers
+to something narrower (e.g. no *extra RNG/success-rate* cost, but still a
+real one-time gold/material cost). Don't treat "no separate cost" as "free"
+until this is checked directly against Maxroll's breakthrough-specific
+material list.
+### Column identities — confirmed directly (not inferred)
+Per-column meaning, left to right, as described directly off the live
+Maxroll calculator:
+- **Value** — total gold-equivalent cost for that level (equals the Gold
+  column exactly whenever no market purchases are needed — confirmed
+  empirically in the table below, e.g. weapon +18: Value 120,567 = Gold
+  120,567).
+- **Silver** — ignore for gold-cost purposes (not a market-priced material
+  in this project's terms; resolves the earlier "should Silver be priced
+  in" sub-question — no).
+- **Gold** — fixed cost, doesn't fluctuate with the market.
+- **Shards, Fusion Materials, Destruction Stones, Leapstones** — the four
+  honing materials actually bought on the market; these are what the
+  live-price API (§1) needs to price.
+- **Juice** — optional material that increases success chance. Not a
+  required per-attempt cost. This is what the earlier "Special Honing
+  (qty/value, decreasing)" columns in the +24→+25 attempt-by-attempt table
+  below actually are — an optional, account-inventory-depleting booster,
+  not a mandatory spend. Model it as an optional lever, not baseline cost.
+### Weapon honing, average cost per level (+18 → +25, "Average scenario / No additional materials")
+Confirmed live data, Silver and Juice columns dropped per the above
+(Silver ignored; Juice is optional/not part of baseline cost):
+| Level | Value (Gold) | Shards | Fusion | Destruction | Leapstones |
+|---|---|---|---|---|---|
+| +18 | 120,567 | 571,179 | 560 | 50,673 | 525 |
+| +19 | 129,303 | 612,426 | 595 | 54,343 | 560 |
+| +20 | 257,242 | 1,121,551 | 1,198 | 108,074 | 1,101 |
+| +21 | 275,038 | 1,199,443 | 1,262 | 115,516 | 1,198 |
+| +22 | 426,716 | 1,802,800 | 1,981 | 179,174 | 1,839 |
+| +23 | 452,649 | 1,912,646 | 2,075 | 190,019 | 1,981 |
+| +24 | 926,909 | 3,782,229 | 4,293 | 389,028 | 4,019 |
+| +25 | 977,135 | 3,987,482 | 4,567 | 410,945 | 4,293 |
+| **Total (+18→+25)** | **3,565,555** | **14,989,752** | **16,526** | **1,497,760** | **15,511** |
+This is now the primary source for weapon honing averages +18 through
++25 — supersedes needing to re-derive from the attempt-by-attempt table
+below for anything except understanding *why* the average comes out that
+way (success-chance curve, pity).
 ### Tier 4.5 real data (captured, weapon +24 → +25, "Average scenario / Full materials")
 Straight from Maxroll's live calculator — this **resolves** the earlier
 finding that no official static T4.5 table exists; Maxroll's calculator
 has it even though Smilegate's patch notes don't publish it directly.
 Transcribed from the screenshot (attempt-by-attempt, base chance shown
-`[with accumulated Artisan's Energy in brackets]`); column identities
-below are now **confirmed** (see resolution note after the table):
-| Attempt | Base chance `[Artisan's Energy]` | Gold | Shards | Fusions | Destruction | Crystal | Leapstones | Special Honing (qty ↓) | Special Honing (gold value ↓) |
+`[with accumulated Artisan's Energy in brackets]`):
+| Attempt | Base chance `[Artisan's Energy]` | Gold | Shards | Fusions | Destruction | Crystal | Leapstones | Juice (qty ↓) | Juice (gold value ↓) |
 |---|---|---|---|---|---|---|---|---|---|
 | 1 | 1.50% `[0.00%]` | 150,030 | 60,000 | 10,150 | 39,840 | 47 | 4,260 | 44 | 1,701 / 572 |
 | 2 | 1.55% `[0.70%]` | 150,030 | 60,000 | 10,150 | 39,840 | 47 | 4,260 | 44 | 1,697 / 568 |
@@ -73,20 +118,14 @@ below are now **confirmed** (see resolution note after the table):
 | 9 | 1.90% `[6.23%]` | 150,030 | 60,000 | 10,150 | 39,840 | 47 | 4,260 | 44 | 1,693 / 546 |
 Totals row (all 25 levels, this weapon): Value 6,860,369 · 4,184,356 ·
 464,254 · 1,966,253 · 2,150 · 194,850 · 2,013 · 2,282.
-**Resolved (previously open task):** cross-checked against the old
-Cracine/Skaitavia sheet's own per-level honing cost table (rows 18–25,
-columns Gold/Shards/Fusions/Destruction/Crystal/Leapstones) — values
-match Maxroll's "Average scenario / Full materials" output for the same
-levels. Maxroll shows two extra columns the old sheet doesn't track:
-**Silver** (leftmost, before Gold) and **Special Honing** (rightmost,
-shown as a qty/gold-value pair) — which is what the mysterious decreasing
-paired numbers in the last two columns above actually are: Special
-Honing material owned-quantity and its gold-equivalent value, both
-draining as an account-wide pool gets consumed (not a per-attempt cost,
-confirming the earlier guess). **New sub-question:** the old sheet's
-totals don't include Silver cost at all — decide whether the rebuilt
-version should price Silver in too, since it's real spend even if it's a
-secondary currency.
+Note this "Full materials" totals row (6,860,369 gold) doesn't match the
+"No additional materials" total above (3,565,555 gold) — expected, since
+"Full materials" presumably means buying everything from the market
+(including at attempt-by-attempt granularity) rather than using
+owned/free materials. Which mode the final model should use is itself an
+open question (see below) — depends on whether the goal is "cost if I buy
+everything" vs. "cost given typical owned-material stockpiles," and the
+two source tables aren't directly interchangeable.
 **Confirmed pattern:** per-attempt base chance climbs +0.05pp per fail
 (classic Artisan's Energy pity, same shape as T1–T4), and material cost
 per attempt is flat regardless of attempt number.
@@ -201,19 +240,29 @@ yet solved. Don't force-fit it without checking the units line up.
 ---
 ## Open questions / decisions for next session
 1. Market price field: `CurrentMinPrice` vs. an average of top-N listings?
-2. ~~T4.5 column C–I material identities~~ — **resolved**, see §2: Gold /
-   Shards / Fusions / Destruction / Crystal / Leapstones / Special Honing
-   (qty + gold value), cross-checked against the old sheet and matching.
-   Follow-up: decide whether to price in Silver too (Maxroll-only column,
-   not in the old sheet's totals).
-3. Extract the Arsonistic sheet's `Calc`/`EffData` DPS formula if
+2. ~~T4.5 column identities~~ — **resolved**, see §2: Silver (ignore) /
+   Gold (fixed) / Shards / Fusion Materials / Destruction Stones /
+   Leapstones (all four market-priced) / Juice (optional success-chance
+   booster, not baseline cost). Confirmed directly, not inferred.
+3. **New:** "Average scenario / No additional materials" totals
+   (3,565,555 gold, +18→+25) vs. "Average scenario / Full materials"
+   totals (6,860,369 gold, +24→+25 alone) don't reconcile — figure out
+   which mode the model should use, and whether "No additional materials"
+   silently assumes free/owned mats that a from-scratch gold-cost model
+   shouldn't assume.
+4. **New:** breakthrough-past-+20 was assumed to have "no separate
+   gold/success-rate cost," but the +21→+25 average-cost rows scale
+   smoothly with no visible one-time jump — confirm directly what
+   breakthrough actually costs and whether it's already inside these
+   averages.
+5. Extract the Arsonistic sheet's `Calc`/`EffData` DPS formula if
    per-class/build-specific numbers are needed (vs. using their pre-baked
    table as-is).
-4. Confirm CORS behavior fetching Shizukaziye's `data/*.json` cross-origin;
+6. Confirm CORS behavior fetching Shizukaziye's `data/*.json` cross-origin;
    plan a relay if blocked.
-5. Work out the unit conversion from astrogem `cut`/`expSpend`/`expScore`
+7. Work out the unit conversion from astrogem `cut`/`expSpend`/`expScore`
    to a comparable "gold per 1% damage" figure for the combined ranking.
-6. Decide dashboard vs. Sheet-Apps-Script delivery target (previously
+8. Decide dashboard vs. Sheet-Apps-Script delivery target (previously
    leaning dashboard, but not committed since nothing's been built).
 ## Explicitly not done yet
 No code, no dashboard, no Apps Script. This file is the handoff point —
