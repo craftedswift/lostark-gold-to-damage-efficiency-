@@ -24,7 +24,7 @@ data sources first. Section-by-section status below.
 | Maxroll Honing Calculator | Live, current T4.5 per-level success chance + material quantities (screenshot captured — see below) | https://maxroll.gg/lost-ark/upgrade-calculator |
 | Shizukaziye's astrogem-calculator | Open, documented, verified (JS/Python parity + DP-vs-Monte-Carlo gated) astrogem cut/fuse model, including side-node/support scoring | https://shizukaziye.github.io/astrogem-calculator/ · source: https://github.com/shizukaziye/astrogem-calculator · math: `METHODOLOGY.md` in that repo |
 | Lost Ark OpenAPI | Official live market price endpoint (`POST /markets/items`), auth via personal JWT — superseded as our chosen price source (see §1), kept here for reference/fallback | https://developer-lostark.game.onstove.com |
-| Shizukaziye's loa-deal-finder | Same author as the astrogem calculator; live "fair price" model with an outlier-resistant methodology (see §1) — the methodology (not necessarily the exact data source) is the basis for our market-price approach | https://shizukaziye.github.io/loa-deal-finder/ |
+| Shizukaziye's loa-deal-finder | Same author as the astrogem calculator. **Confirmed via their open-source `refresh_deals.py`: not an independent data source** — pulls from the same LOA Buddy Worker API. Its exact "fair price" formula (source-verified, see §1) is what we've adopted, and its server-side-fetch architecture is the CORS solution we've adopted too | site: https://shizukaziye.github.io/loa-deal-finder/ · source: https://github.com/shizukaziye/loa-deal-finder |
 | Lost Ark Market Online API | Superseded — Postman docs appear deprecated/stale (see §1), replaced by LOA Buddy below. Kept for reference only. | Postman docs: https://documenter.getpostman.com/view/20821530/UyxbppKr · org: https://github.com/Lost-Ark-Market-Online |
 | LOA Buddy | **Chosen market data source** (see §1). Live site with Trade Skill + Honing Materials (incl. Additional Honing Materials/Juice) price tracking, NAE confirmed, 7d/14d/30d historical charts. Backed by a public (no-auth) Cloudflare Worker API — confirmed via live inspection, not docs. | https://loa-buddy.pages.dev · API: `marketdata-api.yrzhao1068589.workers.dev` (undocumented, reverse-engineered — see §1) |
 ---
@@ -70,59 +70,96 @@ Destruction Stone"** as separate named items — this independently
 confirms the Guardian-Stone-for-armor / Destruction-Stone-for-weapon
 split already documented in §2, from a completely different source than
 where that naming came from originally. Good cross-check.
-**Blocker — CORS, confirmed by direct testing (not assumed):** tested
-the Worker directly with `curl`, sending different `Origin` headers.
-Result: `Access-Control-Allow-Origin` is only returned when
+**CORS confirmed blocking direct frontend calls, but resolved — see
+"Architecture takeaway" further down:** tested the Worker directly with
+`curl`, sending different `Origin` headers. Result:
+`Access-Control-Allow-Origin` is only returned when
 `Origin: https://loa-buddy.pages.dev` is sent — tested with a generic
 foreign origin and with what would be our own site's likely GitHub
 Pages origin, and both got **no CORS header back**, meaning a real
-browser would block the request. **This means we cannot call this API
-directly from our own frontend** — same class of problem already noted
-for the official OpenAPI. Needs a relay: either our own small Cloudflare
-Worker/serverless proxy (same pattern Shizukaziye uses for the official
-API), or fetching server-side instead of client-side.
+browser would block a client-side request. **Resolution: don't call it
+from the browser at all.** Shizukaziye's own `refresh_deals.py` (see
+below) proves the fix — fetch server-side (their script uses `curl` in a
+periodic Python job, not a browser `fetch()`), since CORS is a
+browser-only restriction and doesn't apply to server-to-server calls.
+Bake the results into static data our frontend reads, same as their
+architecture.
 **Not yet checked:** whether hitting this undocumented API at any real
 volume triggers rate limiting or is against the (nonexistent, since
 there's no public ToS) spirit of a small community tool — worth being a
 polite, low-frequency consumer (e.g. cache prices for a day, don't poll
 constantly) given this is someone's personal/hobby infrastructure, not a
 funded public API.
-**Resolved — pricing methodology (adopted from Shizukaziye's
-loa-deal-finder, same author/data source as the astrogem calculator):**
-use a **"fair price"** derived from recent daily averages, not a single
-raw API field (`CurrentMinPrice`/`AvgPrice`/`RecentPrice`) picked in
-isolation. Their model, to replicate:
-1. Take the last 14 daily average prices for the item.
-2. Drop the current (live, still in-progress) day — incomplete data.
-3. Drop the highest and lowest couple of completed days — trims single
-   buyout spikes or troll/lowball listings.
-4. Take a **recency-weighted mean** of what's left.
-This tracks real price movement while being resistant to one-off spikes
-in either direction — a better fit for this project than any single raw
-field, especially since honing needs bulk quantities where a single
-lowball listing (`CurrentMinPrice`) would badly understate real cost.
+**Resolved — pricing methodology, EXACT formula confirmed from source
+(not a screenshot description anymore):** loa-deal-finder
+(https://shizukaziye.github.io/loa-deal-finder/) is **open source**
+(https://github.com/shizukaziye/loa-deal-finder) — pulled the actual
+code rather than guessing from the UI. Two key files:
+- `refresh_deals.py` — a build-time script that fetches fresh prices and
+  bakes them into `index.html` as a static `const DEALS=...` blob (no
+  live API calls happen when you load the page — everything's
+  pre-rendered). **This confirms loa-deal-finder is not an independent
+  data source** — its `BASE` constant is literally
+  `https://marketdata-api.yrzhao1068589.workers.dev/v1`, the exact same
+  Worker already found via LOA Buddy. Scraping loa-deal-finder instead
+  of LOA Buddy would just be scraping the same upstream data one layer
+  removed, with less coverage (only the items they've chosen to track).
+- `index.html`'s inline script has the actual `robust()` function that
+  computes fair price — this is the ground truth, verbatim:
+  ```js
+  function robust(h, te, d){          // h=history (newest-first), te=trim edges, d=decay
+    if(!h || !h.length) return null;
+    let a = h.length>1 ? h.slice(1) : h.slice();      // drop today (index 0, live/in-progress)
+    if(te>0 && a.length>2*te){
+      const idx = a.map((v,i)=>i).sort((x,y)=>a[x]-a[y]);
+      const drop = new Set([...idx.slice(0,te), ...idx.slice(idx.length-te)]);  // te lowest + te highest
+      a = a.filter((v,i)=>!drop.has(i));
+    }
+    let num=0, den=0, w=1;
+    for (const v of a){ num += v*w; den += w; w *= d; }   // geometric recency decay
+    return den ? Math.round(num/den) : null;
+  }
+  // called as: robust(item.history, 2, 0.9) || item.spotPrice   (fallback to spot if no history)
+  ```
+  So precisely: **drop today, trim the 2 highest + 2 lowest of the
+  remaining (up to 13) completed days, then take a decay-weighted mean
+  with weight `0.9^i`** (i = position from most-recent surviving day,
+  starting at 0). Falls back to current spot price if there's not enough
+  history to compute a fair price. This replaces the earlier "couple of
+  high/low days" approximation — it's exactly 2, and the decay factor is
+  exactly 0.9, both confirmed from source. **Use this exact formula**,
+  don't re-derive or approximate it further.
+- History window in practice: `refresh_deals.py` fetches 20 days from
+  the API but only keeps the most recent 14 (`[:14]` after reversing to
+  newest-first) — so "last 14 daily average prices" in the UI text means
+  literally 14 raw days in, of which today gets dropped and up to 4 more
+  get trimmed, leaving up to 9 days feeding the weighted mean.
 **Not directly needed, but same toolkit:** their `deal = (spot - fair) /
 fair` metric (negative = below fair = a good buy) is for *finding market
 deals*, not something this project needs — we only need the `fair` price
 itself as a per-material gold value, not the deal-percentage layer on
-top. Worth knowing about in case a "should I buy materials now or wait"
-feature ever gets added later.
-**Liquidity filtering (their term, may not apply to us):** since there's
-no real volume data, they infer liquidity from price *behavior* scaled by
-value — an item only counts as reliably priced if it has a full 14-day
-history and stays within a value-scaled steadiness tolerance. Relevant
-mainly for their "should this item be trusted at all" filter; for the
-handful of specific honing materials we care about (Shards, Fusion
-Materials, Destiny Stones, Leapstones), we'd want their fair price
-regardless of whether they'd pass that liquidity filter for a general
-deal-finder.
-**Open task:** find and read the source/methodology doc for
-loa-deal-finder (if public, likely alongside the site the same way
-astrogem-calculator has `METHODOLOGY.md`) to get the *exact*
-recency-weighting formula and the "couple" of high/low days trimmed —
-the screenshot description is close enough to replicate roughly, but not
-precise enough to hardcode without checking, the same caution as the
-astrogem model.
+top.
+**Liquidity filtering (their term, confirmed from source, may not apply
+to us):** `r.rel && r.h.length>=8 && r.fair>=minv && Math.abs(x.gap)<=1.5
+&& x.vol<=volTol(x.fair)` — requires the item's category to be in a
+relevant set (`gather`/`fusion`/`honing`/`meal`/`craft` — **honing is
+included**), at least 8 days of history, fair price above a minimum
+value threshold, and price volatility under a value-scaled tolerance
+(`volTol = clamp(0.6 + 0.9·log10(fair), 1.2, 3.6)`). This is their
+"should this item be trusted at all for a general deal-finder" gate —
+for the handful of specific honing materials we already know we need
+(Shards, Fusion Materials, Destiny Stones, Leapstones), we'd want the
+`fair` price regardless of whether they'd individually pass this filter.
+**Architecture takeaway — this changes the CORS answer below:**
+`refresh_deals.py` calls the Worker via `curl` in a **server-side Python
+script**, not a browser `fetch()`. CORS is a browser-enforced
+restriction only — it doesn't apply to server-to-server calls at all.
+This means the right fix for the CORS blocker isn't necessarily "build a
+relay Worker" — it's simpler to just **fetch server-side** (a small
+script run periodically, e.g. via GitHub Actions on a schedule,
+mirroring this exact architecture) and bake/publish the resulting prices
+as static data our frontend reads, rather than the frontend calling the
+Worker directly at all.
 **Official OpenAPI, kept for reference/fallback only (not the chosen
 source):** likely doesn't send CORS headers for arbitrary browser
 origins either. Getting access: sign in at the developer portal with
@@ -433,24 +470,31 @@ gold-per-1%-damage figure directly — converting between the two (e.g. via
 yet solved. Don't force-fit it without checking the units line up.
 ---
 ## Open questions / decisions for next session
-1. ~~Market price field~~ — **resolved**, see §1: adopt Shizukaziye's
-   loa-deal-finder "fair price" methodology (14-day daily averages, drop
-   the live day + high/low outlier days, recency-weighted mean of the
-   rest) instead of picking a single raw API field. Follow-up: find their
-   exact methodology doc to confirm precise weighting/trim parameters
-   before hardcoding.
+1. ~~Market price field~~ — **fully resolved, exact formula confirmed
+   from loa-deal-finder's open source** (see §1): drop today, trim the 2
+   highest + 2 lowest of the remaining completed days, geometric
+   recency-weighted mean with decay 0.9. No longer an approximation —
+   this is the actual `robust()` function from their code, not a
+   screenshot-derived guess.
 1b. ~~Data source decision~~ — **resolved and confirmed**, see §1: the
    Lost Ark Market Online Postman API turned out to be effectively
    deprecated, so switched to **LOA Buddy** (https://loa-buddy.pages.dev),
    reverse-engineered by inspecting live network traffic. Endpoints,
    request/response schema, no-auth confirmation, ≥30-day history depth,
-   and item-slug pattern are all confirmed directly (not assumed).
+   and item-slug pattern are all confirmed directly (not assumed). Also
+   confirmed: loa-deal-finder (Shizukaziye) is downstream of this same
+   API, not an independent source — checked their open-source build
+   script directly. **CORS is confirmed blocking direct frontend calls,
+   and resolved:** don't call the Worker from the browser at all — fetch
+   server-side (e.g. a scheduled script/GitHub Action, mirroring
+   Shizukaziye's own `refresh_deals.py` architecture) and bake the
+   result into static data the frontend reads. No relay Worker needed.
    **Still open:** (a) it's undocumented third-party infra with no
-   stability guarantee, (b) **CORS is confirmed blocking** direct
-   frontend calls from our own site (tested directly) — needs a relay
-   Worker/serverless proxy before this can actually be called from the
-   built site, (c) exact item slugs for our specific honing materials
-   aren't enumerated yet, just the naming pattern.
+   stability guarantee — build with that fragility in mind; (b) exact
+   item slugs for our specific honing materials aren't enumerated yet,
+   just the naming pattern (kebab-case of display name); (c) whether
+   polling this at any real volume is impolite to someone's hobby
+   infrastructure — cache aggressively, don't poll constantly.
 2. ~~T4.5 column identities~~ — **resolved**, see §2: Silver (ignore) /
    Gold (fixed) / Shards / Fusion Materials / Destiny Stones /
    Leapstones (all four market-priced) / Juice (optional success-chance
