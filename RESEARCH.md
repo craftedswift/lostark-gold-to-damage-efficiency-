@@ -73,9 +73,14 @@ Maxroll calculator:
   in this project's terms; resolves the earlier "should Silver be priced
   in" sub-question — no).
 - **Gold** — fixed cost, doesn't fluctuate with the market.
-- **Shards, Fusion Materials, Destruction Stones, Leapstones** — the four
+- **Shards, Fusion Materials, Destiny Stones, Leapstones** — the four
   honing materials actually bought on the market; these are what the
-  live-price API (§1) needs to price.
+  live-price API (§1) needs to price. "Destiny Stones" is this project's
+  umbrella vocab for this material slot — in-game it's actually two
+  different items depending on gear type: **Guardian Stone** for armor,
+  **Destruction Stone** for weapons. When pricing via the market API,
+  query the correct one per gear-piece type — don't use one item name for
+  both.
 - **Juice** — optional material that increases success chance. Not a
   required per-attempt cost. This is what the earlier "Special Honing
   (qty/value, decreasing)" columns in the +24→+25 attempt-by-attempt table
@@ -84,7 +89,7 @@ Maxroll calculator:
 ### Weapon honing, average cost per level (+18 → +25, "Average scenario / No additional materials")
 Confirmed live data, Silver and Juice columns dropped per the above
 (Silver ignored; Juice is optional/not part of baseline cost):
-| Level | Value (Gold) | Shards | Fusion | Destruction | Leapstones |
+| Level | Value (Gold) | Shards | Fusion | Destiny Stones | Leapstones |
 |---|---|---|---|---|---|
 | +18 | 120,567 | 571,179 | 560 | 50,673 | 525 |
 | +19 | 129,303 | 612,426 | 595 | 54,343 | 560 |
@@ -105,7 +110,7 @@ finding that no official static T4.5 table exists; Maxroll's calculator
 has it even though Smilegate's patch notes don't publish it directly.
 Transcribed from the screenshot (attempt-by-attempt, base chance shown
 `[with accumulated Artisan's Energy in brackets]`):
-| Attempt | Base chance `[Artisan's Energy]` | Gold | Shards | Fusions | Destruction | Crystal | Leapstones | Juice (qty ↓) | Juice (gold value ↓) |
+| Attempt | Base chance `[Artisan's Energy]` | Gold | Shards | Fusions | Destiny Stones | Crystal | Leapstones | Juice (qty ↓) | Juice (gold value ↓) |
 |---|---|---|---|---|---|---|---|---|---|
 | 1 | 1.50% `[0.00%]` | 150,030 | 60,000 | 10,150 | 39,840 | 47 | 4,260 | 44 | 1,701 / 572 |
 | 2 | 1.55% `[0.70%]` | 150,030 | 60,000 | 10,150 | 39,840 | 47 | 4,260 | 44 | 1,697 / 568 |
@@ -118,14 +123,17 @@ Transcribed from the screenshot (attempt-by-attempt, base chance shown
 | 9 | 1.90% `[6.23%]` | 150,030 | 60,000 | 10,150 | 39,840 | 47 | 4,260 | 44 | 1,693 / 546 |
 Totals row (all 25 levels, this weapon): Value 6,860,369 · 4,184,356 ·
 464,254 · 1,966,253 · 2,150 · 194,850 · 2,013 · 2,282.
-Note this "Full materials" totals row (6,860,369 gold) doesn't match the
-"No additional materials" total above (3,565,555 gold) — expected, since
-"Full materials" presumably means buying everything from the market
-(including at attempt-by-attempt granularity) rather than using
-owned/free materials. Which mode the final model should use is itself an
-open question (see below) — depends on whether the goal is "cost if I buy
-everything" vs. "cost given typical owned-material stockpiles," and the
-two source tables aren't directly interchangeable.
+**Resolved:** the gap between "No additional materials" (3,565,555 gold,
++18→+25) and "Full materials" (6,860,369 gold, +24→+25 alone) is the
+**Juice toggle**, not a stockpile assumption — "No additional materials"
+= no Juice, "Full materials" = full Juice usage. The reason "No
+additional materials" is the right default for a *gold-efficiency* model:
+Juice's own gold cost exceeds the gold value of the success-chance boost
+it provides, so buying it is never optimal from a pure gold-per-%-damage
+standpoint. **Use "No additional materials" / no-Juice numbers as the
+baseline honing cost** for this project; Juice only matters if someone
+cares about *guaranteeing* a faster/more predictable outcome at a
+known gold premium, which is a different (non-optimal-spend) use case.
 **Confirmed pattern:** per-attempt base chance climbs +0.05pp per fail
 (classic Artisan's Energy pity, same shape as T1–T4), and material cost
 per attempt is flat regardless of attempt number.
@@ -241,15 +249,14 @@ yet solved. Don't force-fit it without checking the units line up.
 ## Open questions / decisions for next session
 1. Market price field: `CurrentMinPrice` vs. an average of top-N listings?
 2. ~~T4.5 column identities~~ — **resolved**, see §2: Silver (ignore) /
-   Gold (fixed) / Shards / Fusion Materials / Destruction Stones /
+   Gold (fixed) / Shards / Fusion Materials / Destiny Stones /
    Leapstones (all four market-priced) / Juice (optional success-chance
    booster, not baseline cost). Confirmed directly, not inferred.
-3. **New:** "Average scenario / No additional materials" totals
-   (3,565,555 gold, +18→+25) vs. "Average scenario / Full materials"
-   totals (6,860,369 gold, +24→+25 alone) don't reconcile — figure out
-   which mode the model should use, and whether "No additional materials"
-   silently assumes free/owned mats that a from-scratch gold-cost model
-   shouldn't assume.
+3. ~~"No additional materials" vs. "Full materials" totals don't
+   reconcile~~ — **resolved**, see §2: the difference is the Juice
+   (success-chance booster) toggle, not a stockpile assumption. Use
+   "No additional materials" (no Juice) as baseline, since Juice's gold
+   cost exceeds the gold value of the chance boost it buys.
 4. **New:** breakthrough-past-+20 was assumed to have "no separate
    gold/success-rate cost," but the +21→+25 average-cost rows scale
    smoothly with no visible one-time jump — confirm directly what
