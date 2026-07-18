@@ -33,6 +33,51 @@ Answering "did the original authors pull from a source or do the math
 themselves": **both, and they say so explicitly.** The sheet has its own
 "Explanations" tab with credits and methodology notes. Read directly
 rather than guessed. Key points, by relevance to this project:
+**Critical finding — the DMG% numbers cannot be verified from inside the
+sheet, because they aren't formulas.** Checked directly by clicking
+cells on the "Gold to DMG% DPS" tab (not assumed): the **GAIN [DMG%]
+column is hardcoded literal values** — e.g. cell B2 ("ACCESSORY MID [5
+ANCIENT]") just contains the typed number `4.6%`, not a formula. This is
+true across the rows checked (spot-checked B2 and B21). **The EXPENSE
+(gold cost) column, by contrast, is genuinely formula-driven** — e.g.
+cell C13 ("WEAPON ADVANCED HONING 11-20 FULL ON GRACE") contains
+`=Honing!B29 + Honing!C29/1000 * $H$8 + Honing!D29 * $H$10 + ...`, live-
+pulling from the workbook's own `Honing` tab and region-price cells. And
+the EXPENSE column elsewhere uses `=ARRAY_CONSTRAIN(ARRAYFORMULA(
+INDIRECT($G$2 & "!B2")), 1, 1)` — dynamically switching which regional
+price tab (`NA`/`EUC`/`KR`) it reads from based on a region selector
+cell.
+**What this means for "verify their numbers":** the gold-cost side is
+self-consistent and traceable within their own workbook (you can follow
+the formula chain to the actual regional price cells). **The damage-%
+side is not** — it's an opaque, externally-computed number credited to
+Portia/Riyon, pasted in as a constant. There's no formula trail to audit
+inside this file. Verifying it requires **cross-referencing against an
+independent, formula-driven source** — which we already have two of in
+this doc:
+- **Arsonistic DPS Calculator (§3)** — real build-simulated damage-gain
+  %, formula-derived (their `Calc`/`EffData` tabs), for accessory
+  substats. Directly comparable in *kind* to the Cracine sheet's
+  accessory rows, though not in scale — Arsonistic's numbers are
+  per-single-accessory-piece (e.g. HH Additional Damage = 3.99%), while
+  Cracine's "[5 ANCIENT]" rows appear to be **all 5 accessory slots at
+  once** (2 rings + 2 earrings + necklace), so a rough sum-of-5-pieces
+  check against Arsonistic's per-piece numbers is the right comparison,
+  not a direct 1:1 match.
+- **Maxroll honing data (§2)** — already directly verified against
+  Cracine's own honing costs earlier this session (they matched, see
+  §2's honing tables) — but that was the EXPENSE side, which we now know
+  was already traceable/self-consistent anyway. The DMG%-per-honing-
+  level numbers in Cracine's sheet still haven't been independently
+  checked against anything.
+**Not yet done — the actual next step for real verification:** pick 2-3
+overlapping rows (start with an accessory row, since Arsonistic's data
+is already captured in §3) and do the sum-of-parts comparison by hand,
+documenting whether Cracine's number falls in a plausible range or is
+off. This hasn't been done yet this session — worth doing before
+deciding whether to reuse any of Cracine's DMG% numbers directly versus
+re-deriving everything from Arsonistic/Maxroll/Shizukaziye's own
+(traceable) formulas.
 **Authorship/provenance:** Made by Cracine (Twitch: cracine), crediting
 Reddit user **Skaitavia** for explanations/baseline format, and
 **Portia (포피셜)** and **Riyon (리연)** — Korean community
@@ -593,6 +638,15 @@ yet solved. Don't force-fit it without checking the units line up.
    Power buff, priced the same way as other flat-AP sources already in
    this doc. No longer blocked on item 5. Open: where this bucket-picker
    lives in the UI/flow, and whether 3 buckets are granular enough.
+10. **New, see §0:** Cracine sheet's DMG% numbers are hardcoded
+   constants, not formulas — confirmed by clicking cells directly (the
+   EXPENSE/cost column is genuinely formula-driven, GAIN/DMG% is not).
+   Not independently verified yet. Next step: pick 2-3 overlapping rows
+   (start with an accessory row, using Arsonistic's already-captured §3
+   data) and manually cross-check whether Cracine's numbers are
+   plausible — before deciding whether to reuse their DMG% figures at
+   all versus re-deriving everything from Arsonistic/Maxroll/
+   Shizukaziye's own traceable formulas.
 ## Explicitly not done yet
 No code, no dashboard, no Apps Script. This file is the handoff point —
 next step for whoever (or whichever Claude) picks this up is to resolve
