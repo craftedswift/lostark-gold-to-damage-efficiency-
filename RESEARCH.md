@@ -385,15 +385,19 @@ sheet numbers, or §4's astrogem Attack Power per-level constant
 ```
 Gem dmg% gain = (skill-specific %dmg gain × that skill's dmg-share%) + (flat AP buff's marginal dmg% value)
 ```
-**Open task — the real blocker:** none of this is computable without
-**per-skill damage-share data** for a given build (what % of total DPS
-does each skill contribute). That's build/class/rotation-specific and
-isn't something to guess — it ties directly into the still-unresolved
-open task from §3: extracting the Arsonistic DPS Calculator's `Calc`/
-`EffData` formula (or otherwise getting per-skill DPS breakdown) is now
-a **shared prerequisite** for both accurate accessory/engraving numbers
-*and* accurate gem-upgrade ranking, not just a "nice to have" for
-build-specific accuracy as originally framed in §3.
+**Resolved — sidestep exact damage-share data, use buckets instead:**
+rather than requiring precise per-skill DPS-share numbers (which would
+need the Arsonistic sheet's DPS formula extracted, a real project on its
+own), use **damage-share buckets — 20% / 40% / 60%** — and let the user
+pick which bucket their skill falls into. This drops the dependency on
+extracting Arsonistic's `Calc`/`EffData` formula entirely for this
+section; that extraction (§3) goes back to being a "nice to have" for
+build-specific accessory accuracy, not a blocker for anything in §5.
+**Open task:** the user picks their skill's bucket manually (no attempt
+to auto-derive it from a log parser or build guide) — figure out where
+in the UI/flow this selection happens, and whether 20/40/60% is granular
+enough or a 4th bucket (e.g. 80%, for classes with one dominant hyper-
+carried skill) is worth adding once real builds are tested against it.
 ---
 ## 6. Combined ranking formula (ties everything together)
 Same as the original sheet's `Gold to DMG% DPS` tab:
@@ -437,24 +441,24 @@ yet solved. Don't force-fit it without checking the units line up.
    to breakthrough. Decision: ignore breakthrough materials in the model
    entirely — most players have enough naturally, not worth modeling as
    a gate.
-5. **Upgraded from "nice to have" to blocking, see §5:** extract the
-   Arsonistic sheet's `Calc`/`EffData` DPS formula (or otherwise get
-   per-skill damage-share % for a build) — no longer just needed for
-   build-specific accessory numbers, it's now a **shared prerequisite**
-   for ranking Combat/Support gem upgrades at all (§5), since a gem's
-   real value depends entirely on how much of total DPS its socketed
-   skill represents.
+5. Extract the Arsonistic sheet's `Calc`/`EffData` DPS formula if
+   per-class/build-specific numbers are needed (vs. using their pre-baked
+   table as-is). **No longer a blocker for §5/gems** — gem ranking uses
+   user-picked damage-share buckets instead (see item 9), so this is back
+   to being a "nice to have" for accessory-number accuracy only.
 6. Confirm CORS behavior fetching Shizukaziye's `data/*.json` cross-origin;
    plan a relay if blocked.
 7. Work out the unit conversion from astrogem `cut`/`expSpend`/`expScore`
    to a comparable "gold per 1% damage" figure for the combined ranking.
 8. Decide dashboard vs. Sheet-Apps-Script delivery target (previously
    leaning dashboard, but not committed since nothing's been built).
-9. **New, see §5:** gem upgrades (Damage/Cooldown, per-skill) need a
-   damage-gain formula that combines (a) the skill-specific %dmg gain
-   weighted by that skill's damage share, and (b) the gem's flat Attack
+9. **Revised, see §5:** gem upgrades (Damage/Cooldown, per-skill) use
+   **user-picked damage-share buckets (20% / 40% / 60%)** instead of
+   exact per-skill DPS-share data — combines (a) the skill-specific %dmg
+   gain weighted by the chosen bucket, and (b) the gem's flat Attack
    Power buff, priced the same way as other flat-AP sources already in
-   this doc. Blocked on item 5 above.
+   this doc. No longer blocked on item 5. Open: where this bucket-picker
+   lives in the UI/flow, and whether 3 buckets are granular enough.
 ## Explicitly not done yet
 No code, no dashboard, no Apps Script. This file is the handoff point —
 next step for whoever (or whichever Claude) picks this up is to resolve
