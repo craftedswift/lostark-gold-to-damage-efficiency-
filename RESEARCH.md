@@ -24,14 +24,52 @@ data sources first. Section-by-section status below.
 | Maxroll Honing Calculator | Live, current T4.5 per-level success chance + material quantities (screenshot captured — see below) | https://maxroll.gg/lost-ark/upgrade-calculator |
 | Shizukaziye's astrogem-calculator | Open, documented, verified (JS/Python parity + DP-vs-Monte-Carlo gated) astrogem cut/fuse model, including side-node/support scoring | https://shizukaziye.github.io/astrogem-calculator/ · source: https://github.com/shizukaziye/astrogem-calculator · math: `METHODOLOGY.md` in that repo |
 | Lost Ark OpenAPI | Official live market price endpoint (`POST /markets/items`), auth via personal JWT | https://developer-lostark.game.onstove.com |
+| Shizukaziye's loa-deal-finder | Same author as the astrogem calculator; live "fair price" model built on this same OpenAPI market data, with an outlier-resistant methodology (see §1) — this is now the basis for our market-price approach | https://shizukaziye.github.io/loa-deal-finder/ |
 ---
 ## 1. Live market prices
 **Mechanism:** `POST https://developer-lostark.game.onstove.com/markets/items`
 with header `authorization: bearer <JWT>` and body `{"ItemName": "<material name>"}`.
-Returns listings; use `CurrentMinPrice` (cheapest live listing), not
-`AvgPrice`/`RecentPrice` (lags the market) — **open decision:** confirm this
-is the right field for "what I'd actually pay right now" vs. smoothing
-across the top N listings to avoid outlier lowballs.
+**Confirmed:** the market API exposes **no trade volume / order-book
+depth** — no per-listing quantities to smooth across. This kills the
+"average of top-N listings" idea from earlier; the only inputs available
+are per-item daily aggregate prices (a short history, not individual
+orders).
+**Resolved — pricing methodology (adopted from Shizukaziye's
+loa-deal-finder, same author/data source as the astrogem calculator):**
+use a **"fair price"** derived from recent daily averages, not a single
+raw API field (`CurrentMinPrice`/`AvgPrice`/`RecentPrice`) picked in
+isolation. Their model, to replicate:
+1. Take the last 14 daily average prices for the item.
+2. Drop the current (live, still in-progress) day — incomplete data.
+3. Drop the highest and lowest couple of completed days — trims single
+   buyout spikes or troll/lowball listings.
+4. Take a **recency-weighted mean** of what's left.
+This tracks real price movement while being resistant to one-off spikes
+in either direction — a better fit for this project than any single raw
+field, especially since honing needs bulk quantities where a single
+lowball listing (`CurrentMinPrice`) would badly understate real cost.
+**Not directly needed, but same toolkit:** their `deal = (spot - fair) /
+fair` metric (negative = below fair = a good buy) is for *finding market
+deals*, not something this project needs — we only need the `fair` price
+itself as a per-material gold value, not the deal-percentage layer on
+top. Worth knowing about in case a "should I buy materials now or wait"
+feature ever gets added later.
+**Liquidity filtering (their term, may not apply to us):** since there's
+no real volume data, they infer liquidity from price *behavior* scaled by
+value — an item only counts as reliably priced if it has a full 14-day
+history and stays within a value-scaled steadiness tolerance. Relevant
+mainly for their "should this item be trusted at all" filter; for the
+handful of specific honing materials we care about (Shards, Fusion
+Materials, Destiny Stones, Leapstones), we'd want their fair price
+regardless of whether they'd pass that liquidity filter for a general
+deal-finder.
+**Open task:** find and read the source/methodology doc for
+loa-deal-finder (if public, likely alongside the site the same way
+astrogem-calculator has `METHODOLOGY.md`) to get the *exact*
+recency-weighting formula and the "couple" of high/low days trimmed —
+the screenshot description is close enough to replicate roughly, but not
+precise enough to hardcode without checking, the same caution as the
+astrogem model.
 **Known blocker:** the API likely doesn't send CORS headers for arbitrary
 browser origins. Shizukaziye's project works around an equivalent problem
 with a small Cloudflare Worker relay (see their `worker/` folder) — we
@@ -58,11 +96,10 @@ below is therefore just normal escalating honing cost (each tier gets
 more expensive), unrelated to breakthrough — the earlier "tension"
 between assumed breakthrough cost and the smooth curve was a false
 lead: there was never a breakthrough cost to show up in the curve.
-**Modeling implication:** breakthrough materials should be modeled as a
-**gating requirement** (do you have the Serca drops needed to even
-attempt +21+), not as a gold cost added to the honing formula. This
-matters for the combined ranking (§5) — it's not a `(gain%, expense_gold)`
-pair like everything else, since it's not gold-purchasable on demand.
+**Modeling decision: ignore it.** Most players accumulate enough Serca
+raid materials naturally that this isn't a real blocker in practice — not
+worth modeling as a gating requirement. Excluded from the model entirely
+rather than special-cased.
 ### Column identities — confirmed directly (not inferred)
 Per-column meaning, left to right, as described directly off the live
 Maxroll calculator:
@@ -296,7 +333,12 @@ gold-per-1%-damage figure directly — converting between the two (e.g. via
 yet solved. Don't force-fit it without checking the units line up.
 ---
 ## Open questions / decisions for next session
-1. Market price field: `CurrentMinPrice` vs. an average of top-N listings?
+1. ~~Market price field~~ — **resolved**, see §1: adopt Shizukaziye's
+   loa-deal-finder "fair price" methodology (14-day daily averages, drop
+   the live day + high/low outlier days, recency-weighted mean of the
+   rest) instead of picking a single raw API field. Follow-up: find their
+   exact methodology doc to confirm precise weighting/trim parameters
+   before hardcoding.
 2. ~~T4.5 column identities~~ — **resolved**, see §2: Silver (ignore) /
    Gold (fixed) / Shards / Fusion Materials / Destiny Stones /
    Leapstones (all four market-priced) / Juice (optional success-chance
@@ -310,9 +352,9 @@ yet solved. Don't force-fit it without checking the units line up.
    a materials-gate (raid drops from Serca), not a gold cost, so it was
    never going to show up as a cost jump in the curve. The +19→+20 jump
    (~+95-99%) is just normal escalating per-level honing cost, unrelated
-   to breakthrough. Remaining follow-up: model breakthrough materials as
-   a gating requirement in §5's ranking, not as a `(gain%, expense_gold)`
-   pair — it's not something you can just buy more gold to skip.
+   to breakthrough. Decision: ignore breakthrough materials in the model
+   entirely — most players have enough naturally, not worth modeling as
+   a gate.
 5. Extract the Arsonistic sheet's `Calc`/`EffData` DPS formula if
    per-class/build-specific numbers are needed (vs. using their pre-baked
    table as-is).
