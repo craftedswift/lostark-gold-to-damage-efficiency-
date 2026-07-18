@@ -95,12 +95,14 @@ directly rather than left as an unreadable image link:
 | Common | Weapon Attack Power (flat) 960/480/195 | 0.40/0.20/0.08% | at 120k Weapon AP; same diminishing pattern |
 **Comparison against Arsonistic's §3 numbers (independent build, different
 source):** matching each stat's High-tier raw value against the closest
-Arsonistic row —
-- Additional Damage: Arsonistic 1.95% vs. 또피셜 1.88% (~4% apart) — **close agreement**
-- Attack Power%: Arsonistic 1.38% vs. 또피셜 1.43% (~4% apart) — **close agreement**
-- Weapon Power%: Arsonistic 1.03% vs. 또피셜 1.49% (~45% apart) — **notable divergence**
-- Crit Rate: Arsonistic 1.23% vs. 또피셜 1.06–1.09% (~13–15% apart) — **moderate divergence**
-- Crit Damage: Arsonistic 1.29% vs. 또피셜 1.45% (~12% apart) — **moderate divergence**
+Arsonistic row. "% apart" = |gap in percentage points| ÷ Arsonistic's
+value (i.e. how big the gap is relative to the Arsonistic number
+specifically — not a symmetric measure, just a consistent one) —
+- Additional Damage: Arsonistic 1.95% vs. 또피셜 1.88% (gap 0.07 ÷ 1.95 = **3.6%** apart) — **close agreement**
+- Attack Power%: Arsonistic 1.38% vs. 또피셜 1.43% (gap 0.05 ÷ 1.38 = **3.6%** apart) — **close agreement**
+- Weapon Power%: Arsonistic 1.03% vs. 또피셜 1.49% (gap 0.46 ÷ 1.03 = **44.7%** apart) — **notable divergence**
+- Crit Rate: Arsonistic 1.23% vs. 또피셜 1.06–1.09% (gap 0.14–0.17 ÷ 1.23 = **11.4–13.8%** apart) — **moderate divergence**
+- Crit Damage: Arsonistic 1.29% vs. 또피셜 1.45% (gap 0.16 ÷ 1.29 = **12.4%** apart) — **moderate divergence**
 **Conclusion — this is the real answer to "are their numbers correct":**
 two independently-built sources (different players, different exact
 builds) land in the same ballpark for most stats but disagree by
