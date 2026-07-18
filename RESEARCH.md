@@ -23,17 +23,44 @@ data sources first. Section-by-section status below.
 | Arsonistic DPS Calculator | Full class-DPS simulator; `Acc`/`Engr+Stone`/`Brace`/`ArkGrid` tabs derive **real, build-specific** damage-gain % by removing a bonus and diffing DPS | https://docs.google.com/spreadsheets/d/1_0J7liyM_yw16pyn6TKlF1YGaIt5n_A9hSoLnT3yTUc |
 | Maxroll Honing Calculator | Live, current T4.5 per-level success chance + material quantities (screenshot captured — see below) | https://maxroll.gg/lost-ark/upgrade-calculator |
 | Shizukaziye's astrogem-calculator | Open, documented, verified (JS/Python parity + DP-vs-Monte-Carlo gated) astrogem cut/fuse model, including side-node/support scoring | https://shizukaziye.github.io/astrogem-calculator/ · source: https://github.com/shizukaziye/astrogem-calculator · math: `METHODOLOGY.md` in that repo |
-| Lost Ark OpenAPI | Official live market price endpoint (`POST /markets/items`), auth via personal JWT | https://developer-lostark.game.onstove.com |
-| Shizukaziye's loa-deal-finder | Same author as the astrogem calculator; live "fair price" model built on this same OpenAPI market data, with an outlier-resistant methodology (see §1) — this is now the basis for our market-price approach | https://shizukaziye.github.io/loa-deal-finder/ |
+| Lost Ark OpenAPI | Official live market price endpoint (`POST /markets/items`), auth via personal JWT — superseded as our chosen price source (see §1), kept here for reference/fallback | https://developer-lostark.game.onstove.com |
+| Shizukaziye's loa-deal-finder | Same author as the astrogem calculator; live "fair price" model with an outlier-resistant methodology (see §1) — the methodology (not necessarily the exact data source) is the basis for our market-price approach | https://shizukaziye.github.io/loa-deal-finder/ |
+| Lost Ark Market Online API | **Chosen market data source** (see §1). Community-run, live + historic prices, regional filters including NA East/NA West/EU Central/EU West/South America (covers global-release regions). Postman-documented. | Postman docs: https://documenter.getpostman.com/view/20821530/UyxbppKr · org: https://github.com/Lost-Ark-Market-Online |
 ---
 ## 1. Live market prices
-**Mechanism:** `POST https://developer-lostark.game.onstove.com/markets/items`
-with header `authorization: bearer <JWT>` and body `{"ItemName": "<material name>"}`.
-**Confirmed:** the market API exposes **no trade volume / order-book
-depth** — no per-listing quantities to smooth across. This kills the
-"average of top-N listings" idea from earlier; the only inputs available
-are per-item daily aggregate prices (a short history, not individual
-orders).
+**Decision: use the Lost Ark Market Online API** (Postman-documented:
+https://documenter.getpostman.com/view/20821530/UyxbppKr), not the
+official Lost Ark OpenAPI, as this project's market price source. It
+offers live + historic prices with regional filters covering NA East,
+NA West, EU Central, EU West, and South America — matches this
+project's target region (NA East) and the global-release servers
+generally.
+**Caveat carried forward, don't lose track of this:** this API's
+underlying data is community-sourced via volunteer "market watchers"
+running an OCR tool (Tesseract) that screenshots their in-game market
+window — not a direct game-server scrape. That means real risk of OCR
+misreads, coverage gaps on less-watched items, and staleness; the
+project also looked lightly maintained as of this research (last major
+updates ~Feb 2024). Worth a basic sanity check (compare a handful of
+known prices against what's visible in-game or via the official OpenAPI)
+before fully trusting it as ground truth.
+**Open task (blocks implementation):** the Postman documentation page
+didn't yield endpoint/auth/schema details through automated fetching —
+someone needs to actually open
+https://documenter.getpostman.com/view/20821530/UyxbppKr in a browser
+and record: exact endpoint URLs, required auth (API key? none?), request/
+response shape, and — most importantly — whether the historic-price
+response gives enough daily granularity (ideally 14+ days) to actually
+run the fair-price trimmed-mean formula below. Nothing here is confirmed
+beyond "this API exists and covers the right regions."
+**Superseded finding, still true and worth keeping:** the *official*
+OpenAPI (`POST https://developer-lostark.game.onstove.com/markets/items`)
+exposes **no trade volume / order-book depth** — no per-listing
+quantities to smooth across, only per-item daily aggregate prices. This
+ruled out the earlier "average of top-N listings" idea. Whether the same
+limitation applies to the Lost Ark Market Online API is unconfirmed —
+check as part of the open task above; it's plausible their OCR-collected
+data has different structure entirely.
 **Resolved — pricing methodology (adopted from Shizukaziye's
 loa-deal-finder, same author/data source as the astrogem calculator):**
 use a **"fair price"** derived from recent daily averages, not a single
@@ -70,13 +97,18 @@ recency-weighting formula and the "couple" of high/low days trimmed —
 the screenshot description is close enough to replicate roughly, but not
 precise enough to hardcode without checking, the same caution as the
 astrogem model.
-**Known blocker:** the API likely doesn't send CORS headers for arbitrary
-browser origins. Shizukaziye's project works around an equivalent problem
-with a small Cloudflare Worker relay (see their `worker/` folder) — we
-should do the same rather than assume direct browser `fetch()` will work.
-**Getting a key:** sign in at the developer portal with your Steam/Stove
-login → Create Client → copy the JWT from "My Clients." Free, instant,
-personal (don't commit it to a public repo).
+**Known blocker (official OpenAPI, kept for reference/fallback):** the
+API likely doesn't send CORS headers for arbitrary browser origins.
+Shizukaziye's project works around an equivalent problem with a small
+Cloudflare Worker relay (see their `worker/` folder). **Unconfirmed
+whether this applies to the Lost Ark Market Online API too** — check as
+part of the open task above; a community-run API aimed at public
+consumption may already allow CORS, but don't assume it.
+**Getting access (official OpenAPI, kept for reference/fallback):** sign
+in at the developer portal with your Steam/Stove login → Create Client →
+copy the JWT from "My Clients." Free, instant, personal (don't commit it
+to a public repo). **Whether the Lost Ark Market Online API needs its own
+API key/auth is unconfirmed** — part of the open task above.
 ---
 ## 2. Honing — general math (applies to every tier)
 For a per-attempt success chance `p`:
@@ -339,6 +371,13 @@ yet solved. Don't force-fit it without checking the units line up.
    rest) instead of picking a single raw API field. Follow-up: find their
    exact methodology doc to confirm precise weighting/trim parameters
    before hardcoding.
+1b. **New — data source decision:** use the **Lost Ark Market Online API**
+   (Postman-documented) instead of the official Lost Ark OpenAPI for
+   market prices — covers NA East and the other global-release regions.
+   **Not yet done:** actually opening the Postman docs and recording
+   endpoints/auth/schema, and confirming it has enough daily history
+   depth to run the fair-price formula from item 1. This blocks any real
+   implementation and should be the first thing next session.
 2. ~~T4.5 column identities~~ — **resolved**, see §2: Silver (ignore) /
    Gold (fixed) / Shards / Fusion Materials / Destiny Stones /
    Leapstones (all four market-priced) / Juice (optional success-chance
