@@ -19,7 +19,7 @@ data sources first. Section-by-section status below.
 ## Data sources (all confirmed reachable/live as of this writing)
 | Source | What it has | Link |
 |---|---|---|
-| Cracine/Skaitavia sheet | The original "Gold to DMG% DPS" ranking tab, T1–T4 honing, gems, accessories, Ark Grid (stale prices, T4 only) | https://docs.google.com/spreadsheets/d/1Cg9q8t4-MeUg-TQUJ_oeHqN-03z9l-RPlHfHp4gZuzs |
+| Cracine/Skaitavia sheet | The original "Gold to DMG% DPS" ranking tab, T1–T4 honing, gems, accessories, Ark Grid (stale prices, T4 only). Has its own "Explanations" tab documenting methodology and credits — read directly, see below | https://docs.google.com/spreadsheets/d/1Cg9q8t4-MeUg-TQUJ_oeHqN-03z9l-RPlHfHp4gZuzs |
 | Arsonistic DPS Calculator | Full class-DPS simulator; `Acc`/`Engr+Stone`/`Brace`/`ArkGrid` tabs derive **real, build-specific** damage-gain % by removing a bonus and diffing DPS | https://docs.google.com/spreadsheets/d/1_0J7liyM_yw16pyn6TKlF1YGaIt5n_A9hSoLnT3yTUc |
 | Maxroll Honing Calculator | Live, current T4.5 per-level success chance + material quantities (screenshot captured — see below) | https://maxroll.gg/lost-ark/upgrade-calculator |
 | Shizukaziye's astrogem-calculator | Open, documented, verified (JS/Python parity + DP-vs-Monte-Carlo gated) astrogem cut/fuse model, including side-node/support scoring | https://shizukaziye.github.io/astrogem-calculator/ · source: https://github.com/shizukaziye/astrogem-calculator · math: `METHODOLOGY.md` in that repo |
@@ -27,6 +27,70 @@ data sources first. Section-by-section status below.
 | Shizukaziye's loa-deal-finder | Same author as the astrogem calculator. **Confirmed via their open-source `refresh_deals.py`: not an independent data source** — pulls from the same LOA Buddy Worker API. Its exact "fair price" formula (source-verified, see §1) is what we've adopted, and its server-side-fetch architecture is the CORS solution we've adopted too | site: https://shizukaziye.github.io/loa-deal-finder/ · source: https://github.com/shizukaziye/loa-deal-finder |
 | Lost Ark Market Online API | Superseded — Postman docs appear deprecated/stale (see §1), replaced by LOA Buddy below. Kept for reference only. | Postman docs: https://documenter.getpostman.com/view/20821530/UyxbppKr · org: https://github.com/Lost-Ark-Market-Online |
 | LOA Buddy | **Chosen market data source** (see §1). Live site with Trade Skill + Honing Materials (incl. Additional Honing Materials/Juice) price tracking, NAE confirmed, 7d/14d/30d historical charts. Backed by a public (no-auth) Cloudflare Worker API — confirmed via live inspection, not docs. | https://loa-buddy.pages.dev · API: `marketdata-api.yrzhao1068589.workers.dev` (undocumented, reverse-engineered — see §1) |
+---
+## 0. Original sheet's own methodology (read directly, not inferred)
+Answering "did the original authors pull from a source or do the math
+themselves": **both, and they say so explicitly.** The sheet has its own
+"Explanations" tab with credits and methodology notes. Read directly
+rather than guessed. Key points, by relevance to this project:
+**Authorship/provenance:** Made by Cracine (Twitch: cracine), crediting
+Reddit user **Skaitavia** for explanations/baseline format, and
+**Portia (포피셜)** and **Riyon (리연)** — Korean community
+theorycrafters — "for math and numbers." So the core damage-gain math
+wasn't purely self-derived by the sheet's maintainer; it's aggregated
+from named KR theorycrafting sources, then packaged into the sheet.
+**Gems — direct confirmation of our §5 approach:** "DMG gems state their
+%. Which is the distribution of the skill in the class." The sheet
+explicitly used **per-class skill damage-share** to value gems (their
+own "1 CYCLE" / "2 CYCLE" skill categorization), and states outright:
+"OTHER CLASSES DO NOT APPLY, MATH IS TOO SPECIFIC." This validates the
+core idea behind our §5 gem math (damage-gain scales with the socketed
+skill's share of total damage) — the original authors used the same
+concept, just per-class-specific instead of our simplified buckets.
+**Honing — confirms Maxroll as a legitimate source, and reveals a
+modeling shortcut we're improving on:** "Please use the average scenario
+in the Maxroll calculator with optimal materials" — the original sheet
+explicitly sources its honing costs from Maxroll's calculator too,
+independently validating our own choice of Maxroll (§2). However, their
+per-level cost is **bucketed and averaged** (e.g. "ARMOR 17/18/19" is one
+averaged cost across all 3 levels, not per-level) — our §2 approach,
+using individual per-level costs (+16 through +25 separately), is more
+granular/accurate than the original sheet's own method.
+**Accessories:** upgrades assumed relative (sell old gear), Pheon cost
+explicitly excluded from their numbers — worth deciding whether we want
+to include Pheon cost, since they flag it as a known omission rather
+than an oversight.
+**Direct validation of this project's whole premise (Goal #1):** "API
+(KR Only): KR uses API, NAW EUC NAE is manually updated." **The original
+sheet's own author admits NAE (our target region) prices are manually
+updated, not automated** — this is exactly the gap stated in this
+project's Goal #1 ("Auto-pulls current NA East market prices instead of
+stale manual entries"). Not an assumption on our part — the original
+author says so directly.
+**KR accessory pricing methodology (for context, not directly ours):**
+min 70 quality, any trade count/upgrade level, Ancient-only, sorted by
+buy price ascending, averaging the cheapest 10 listings. A different
+methodology from our adopted "fair price" trimmed-mean (§1) — noted for
+context, not something to adopt.
+**Ark Grid/Astrogem — direct confirmation of Goal #3's stated gap:** the
+sheet has its own custom simulation for astrogem cut probability and
+gold cost (reroll/reset decision rules documented), but explicitly
+states: **"Does not consider the damage received from side node
+upgrades. Attack Power, Additional Damage, Boss Damage, Ally Damage,
+Brand Power, Ally Attack are all not considered."** This is the original
+author directly naming the exact gap this project's Goal #3 exists to
+fill, and is exactly what Shizukaziye's astrogem-calculator's
+side-node/support axis (§4) solves — strong validation that adopting
+Shizukaziye's model instead of re-deriving the old sheet's Ark Grid
+simulation was the right call.
+**Engraving/book assumptions (simplifying, worth flagging as a
+limitation to inherit or fix):** "All Engravings are assumed to be 100%
+uptime and affect 100% of your damage" — acknowledged by the original
+author as inaccurate for some engravings (their example: Super Charge,
+All-Out Attack don't actually have 100% uptime), and "All books are
+going from 0→20" as a fixed assumption. If our model reuses any
+engraving-related numbers from this sheet, this same simplification
+carries over unless we specifically correct for it.
 ---
 ## 1. Live market prices
 **Decision: use LOA Buddy's market data API** (https://loa-buddy.pages.dev),
