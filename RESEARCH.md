@@ -50,18 +50,19 @@ For a per-attempt success chance `p`:
 This is the same formula used for T1–T4 in the Cracine sheet and is not
 tier-specific — only the inputs (`p`, material costs, `G`) change per tier.
 ### Breakthrough (T4.5, past +20)
-Confirmed: **no separate gold/success-rate cost** — it only consumes
-materials to unlock going past +20. Treat it as a flat one-time material
-cost per gear piece, not a probabilistic event.
-**Tension to resolve:** the per-level average-cost table below (+21 to
-+25) shows smoothly scaling costs, continuous with +18 through +20, not a
-one-time flat bump at the +20→+21 boundary. Either the breakthrough
-material cost is small enough to not visibly break the curve, or it's
-already baked into these per-level averages and "no separate cost" refers
-to something narrower (e.g. no *extra RNG/success-rate* cost, but still a
-real one-time gold/material cost). Don't treat "no separate cost" as "free"
-until this is checked directly against Maxroll's breakthrough-specific
-material list.
+**Resolved:** breakthrough is a materials *gate*, not a cost — to hone
+past +20 you need raid materials from **Serca** (raid drop), not extra
+gold or a separate success-rate roll. It doesn't add a cost line item at
+all; it's a prerequisite/unlock check. The +19→+20 cost jump identified
+below is therefore just normal escalating honing cost (each tier gets
+more expensive), unrelated to breakthrough — the earlier "tension"
+between assumed breakthrough cost and the smooth curve was a false
+lead: there was never a breakthrough cost to show up in the curve.
+**Modeling implication:** breakthrough materials should be modeled as a
+**gating requirement** (do you have the Serca drops needed to even
+attempt +21+), not as a gold cost added to the honing formula. This
+matters for the combined ranking (§5) — it's not a `(gain%, expense_gold)`
+pair like everything else, since it's not gold-purchasable on demand.
 ### Column identities — confirmed directly (not inferred)
 Per-column meaning, left to right, as described directly off the live
 Maxroll calculator:
@@ -305,13 +306,13 @@ yet solved. Don't force-fit it without checking the units line up.
    (success-chance booster) toggle, not a stockpile assumption. Use
    "No additional materials" (no Juice) as baseline, since Juice's gold
    cost exceeds the gold value of the chance boost it buys.
-4. **Refined:** the big cost jump isn't at +20→+21 as originally
-   assumed — both the no-Juice and full-Juice datasets show it at
-   **+19→+20** instead (~+95-99%, vs. only +4-7% at +20→+21). Still need
-   to confirm directly (against Maxroll's stated breakthrough material
-   list) whether this is breakthrough cost showing up one level earlier
-   than expected, a T4→T4.5 tier-entry cost unrelated to breakthrough, or
-   something else — don't infer further from curve shape alone.
+4. ~~Breakthrough cost tension~~ — **resolved**, see §2: breakthrough is
+   a materials-gate (raid drops from Serca), not a gold cost, so it was
+   never going to show up as a cost jump in the curve. The +19→+20 jump
+   (~+95-99%) is just normal escalating per-level honing cost, unrelated
+   to breakthrough. Remaining follow-up: model breakthrough materials as
+   a gating requirement in §5's ranking, not as a `(gain%, expense_gold)`
+   pair — it's not something you can just buy more gold to skip.
 5. Extract the Arsonistic sheet's `Calc`/`EffData` DPS formula if
    per-class/build-specific numbers are needed (vs. using their pre-baked
    table as-is).
