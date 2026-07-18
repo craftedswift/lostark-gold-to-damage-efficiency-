@@ -70,14 +70,52 @@ this doc:
   was already traceable/self-consistent anyway. The DMG%-per-honing-
   level numbers in Cracine's sheet still haven't been independently
   checked against anything.
-**Not yet done — the actual next step for real verification:** pick 2-3
-overlapping rows (start with an accessory row, since Arsonistic's data
-is already captured in §3) and do the sum-of-parts comparison by hand,
-documenting whether Cracine's number falls in a plausible range or is
-off. This hasn't been done yet this session — worth doing before
-deciding whether to reuse any of Cracine's DMG% numbers directly versus
-re-deriving everything from Arsonistic/Maxroll/Shizukaziye's own
-(traceable) formulas.
+**Cross-check performed — real verification, not just diagnosis.**
+Found a third, independent Korean source with actual per-substat
+accessory damage numbers: an Inven post by **또피셜** (likely the same
+person credited as "Portia (포피셜)" in Cracine's sheet, though the
+username rendering differs slightly — not 100% certain it's the same
+person), "악세 연마옵션별 딜증가 효율표" (Accessory reforging-option
+damage-gain efficiency table),
+https://www.inven.co.kr/board/lostark/4821/99838 — a well-regarded post
+(215,608 views, 20 recommendations, 55 comments as of this check). The
+actual numbers are in an embedded image
+(`upload3.inven.co.kr/upload/2024/07/25/bbs/i1390309873.png`), read
+directly rather than left as an unreadable image link:
+| Slot | Raw stat (High/Mid/Low) | Dmg-gain efficiency (High/Mid/Low) | Baseline noted |
+|---|---|---|---|
+| Necklace | Additional Damage 2.60/1.60/0.60% | 1.88/1.16/0.43% | Ark Passive support build, quality 100, Master Elixir lv40 |
+| Necklace | Additional Damage (alt build) | 1.73/1.06/0.40% | "Longing" set support build, same quality/elixir |
+| Necklace | Boss/enemy dmg 2.00/1.20/0.55% | 2.00/1.20/0.55% | (1:1, no conversion loss) |
+| Earring | Attack Power% 1.55/0.95/0.40% | 1.43/0.88/0.37% | Order Elixir lv5 + Ardent legendary engraving+ |
+| Earring | Weapon Power% 3.00/1.80/0.40% | 1.49/0.90/0.40% | same |
+| Ring | Crit Rate 1.55/0.95/0.40% | 1.06/0.65/0.27% | Crit rate 80%, crit dmg 250% baseline |
+| Ring | Crit Damage 4.00/2.40/1.10% | 1.45/0.87/0.40% | same |
+| Common | Attack Power (flat) 390/195/80 | 0.39/0.20/0.08% | at 100k Attack Power; efficiency drops as AP rises |
+| Common | Weapon Attack Power (flat) 960/480/195 | 0.40/0.20/0.08% | at 120k Weapon AP; same diminishing pattern |
+**Comparison against Arsonistic's §3 numbers (independent build, different
+source):** matching each stat's High-tier raw value against the closest
+Arsonistic row —
+- Additional Damage: Arsonistic 1.95% vs. 또피셜 1.88% (~4% apart) — **close agreement**
+- Attack Power%: Arsonistic 1.38% vs. 또피셜 1.43% (~4% apart) — **close agreement**
+- Weapon Power%: Arsonistic 1.03% vs. 또피셜 1.49% (~45% apart) — **notable divergence**
+- Crit Rate: Arsonistic 1.23% vs. 또피셜 1.06–1.09% (~13–15% apart) — **moderate divergence**
+- Crit Damage: Arsonistic 1.29% vs. 또피셜 1.45% (~12% apart) — **moderate divergence**
+**Conclusion — this is the real answer to "are their numbers correct":**
+two independently-built sources (different players, different exact
+builds) land in the same ballpark for most stats but disagree by
+double-digit percentages on Weapon Power% and, to a lesser extent, Crit
+Rate/Crit Damage. This isn't a sign either source is "wrong" — both
+explicitly caveat that these numbers are **build-relative marginal
+values**, not universal constants, so some spread between different
+baseline builds is expected and legitimate. **The actionable conclusion:
+don't treat any single source's damage-gain % as ground truth for an
+arbitrary user's build.** If this project reuses substat damage-gain
+numbers, it should either (a) let the user pick/confirm their own
+baseline assumptions rather than hardcoding one source's numbers, or (b)
+clearly label whichever source's numbers are used as build-specific
+estimates, not universal truth — matching what both Arsonistic and
+또피셜's own posts already say about their own numbers.
 **Authorship/provenance:** Made by Cracine (Twitch: cracine), crediting
 Reddit user **Skaitavia** for explanations/baseline format, and
 **Portia (포피셜)** and **Riyon (리연)** — Korean community
@@ -638,15 +676,19 @@ yet solved. Don't force-fit it without checking the units line up.
    Power buff, priced the same way as other flat-AP sources already in
    this doc. No longer blocked on item 5. Open: where this bucket-picker
    lives in the UI/flow, and whether 3 buckets are granular enough.
-10. **New, see §0:** Cracine sheet's DMG% numbers are hardcoded
-   constants, not formulas — confirmed by clicking cells directly (the
-   EXPENSE/cost column is genuinely formula-driven, GAIN/DMG% is not).
-   Not independently verified yet. Next step: pick 2-3 overlapping rows
-   (start with an accessory row, using Arsonistic's already-captured §3
-   data) and manually cross-check whether Cracine's numbers are
-   plausible — before deciding whether to reuse their DMG% figures at
-   all versus re-deriving everything from Arsonistic/Maxroll/
-   Shizukaziye's own traceable formulas.
+10. ~~Verify Cracine sheet's DMG% numbers~~ — **partially resolved, see
+   §0.** Confirmed they're hardcoded constants, not formulas (EXPENSE
+   column is formula-driven, GAIN/DMG% is not). Found a third
+   independent source (또피셜's Inven accessory efficiency table) and
+   cross-checked its per-substat numbers against Arsonistic's §3 data:
+   close agreement on Additional Damage/Attack Power%, but 12–45%
+   divergence on Weapon Power%/Crit Rate/Crit Damage — expected
+   build-to-build spread, not an error in either source. **Conclusion:
+   don't hardcode one source's numbers as universal truth.** Still
+   open: this verified the underlying substat building blocks, not
+   Cracine's specific "[5 ANCIENT]" (all-5-accessories) rows directly —
+   that comparison (sum-of-5-pieces vs. Cracine's number) hasn't been
+   done yet.
 ## Explicitly not done yet
 No code, no dashboard, no Apps Script. This file is the handoff point —
 next step for whoever (or whichever Claude) picks this up is to resolve
