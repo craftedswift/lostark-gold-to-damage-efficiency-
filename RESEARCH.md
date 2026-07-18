@@ -133,23 +133,15 @@ hardcoding one source's numbers, or (b) clearly label whichever source's
 numbers are used as build-specific estimates tied to a stated baseline
 — matching what both Arsonistic and 또피셜's own posts already say about
 their own numbers.
-**Decision: use 또피셜's Inven table as the accessory substat damage-gain
-source**, not Arsonistic's. **Correction to the reasoning, worth being
-precise about:** it's not that 또피셜's numbers are baseline-*free* —
-they aren't. The table explicitly states baselines per row (Crit
-Rate/Crit Damage: "crit rate 80%, crit damage 250%"; earrings: "Order
-Elixir lv5 + Ardent legendary engraving+"; necklace: specific set +
-quality + elixir level). The actual reason to prefer it: it's **one
-fixed, explicitly-stated, single baseline across a full accessory-slot
-table**, published standalone with its own credibility (215K
-views/55 comments), versus Arsonistic's numbers which are a by-product
-of whatever specific class/build happened to be loaded in their `Calc`
-tab when captured (§3) — less clear what that baseline even was. Neither
-is baseline-free; 또피셜's is just the more legible, consistently-stated
-one. **Still true regardless of source:** these numbers are only exactly
-right for a character actually at that stated baseline (crit rate 80%,
-etc.) — don't present them as universal without carrying that caveat
-forward.
+**Superseded — see §3.** Originally decided to use 또피셜's Inven table
+over Arsonistic's as the accessory damage-gain source (reasoning: one
+explicit stated baseline vs. an unclear one). That decision was then
+reversed: both tables are patch-snapshot assumptions that can go stale
+(exactly the concern that prompted this), so §3 now derives accessory
+damage-gain **live from the actual damage formula** instead of
+hardcoding either table. 또피셜's numbers (and Arsonistic's) are kept
+only as cross-check/sanity-check data points for validating the derived
+formula, not as the source of truth.
 **Authorship/provenance:** Made by Cracine (Twitch: cracine), crediting
 Reddit user **Skaitavia** for explanations/baseline format, and
 **Portia (포피셜)** and **Riyon (리연)** — Korean community
@@ -511,17 +503,82 @@ more tier/level to build confidence before trusting the formula for tiers
 where we don't have a second reference point.
 ---
 ## 3. Accessory / engraving / bracelet / Ark Grid damage gain
-**Decision: use 또피셜's Inven accessory table (§0) as the accessory
-substat damage-gain source**, not the Arsonistic table below. Both are
-baseline-dependent, not universal — 또피셜's is preferred because it
-states one explicit, consistent baseline per row (crit rate 80%/crit
-dmg 250%, specific elixir/engraving levels) across a full accessory
-table published standalone, versus Arsonistic's numbers being a
-byproduct of whatever build happened to be loaded in their `Calc` tab
-with an unclear baseline. See §0 for the full 또피셜 table and the
-cross-check against Arsonistic's numbers below (close agreement on
-Additional Damage/Attack Power%, real divergence on crit-related stats
-— explained there by baseline crit rate differences).
+**Decision reversed — derive accessory damage-gain math ourselves,
+don't hardcode either external table.** Both the 또피셜 table and
+Arsonistic table are snapshots tied to a specific patch's elixir levels,
+engraving values, and meta assumptions — the user flagged these as
+plausibly outdated already. Instead of picking between two stale
+snapshots, use the actual damage formula (below) and compute marginal
+value **live, from each user's own current stats**, entered as inputs.
+This is strictly more robust: it can't go stale the way a hardcoded
+table can, since it recomputes from whatever the game's real numbers
+are for that specific player right now.
+### The actual damage formula (sourced, not guessed)
+From the Lost Ark Fandom Wiki's Damage page
+(https://lostark.fandom.com/wiki/Damage, page dated March 18 2026 —
+recent enough to matter), quoted directly:
+```
+(InitialValue + (Atk + (SupAtk * (1 + SupAtk% + Orb%))) * Coefficient)
+  * (1 + SuperCharge% + AllOutAttack%)   <- additive-bucket engravings/dmg%
+  * (1 + Grudge%)                          <- each multiplicative engraving is its own factor
+  * (1 + MasterBrawler%)
+  * CritDamage                             <- only applies on a crit
+  * (1 + Gems%)                            <- per-skill gem multiplier
+= Total Damage
+```
+Two structurally different categories of bonus, confirmed by the wiki
+itself: **additive** (stack together inside one `(1 + ... )` bucket
+before that bucket multiplies the total — e.g. Super Charge + All-Out
+Attack) vs. **multiplicative** (each bonus is its own separate `(1 + X)`
+factor — e.g. Grudge, Master Brawler). Community consensus (not
+wiki-confirmed on this specific page, flagged as an assumption to verify
+— see open questions) places accessory **Additional Damage%** and
+**Outgoing Damage%** in the same additive bucket as engravings like
+Super Charge/All-Out Attack — i.e. they sum together, they don't each
+get their own multiplicative factor. This actually **refines**, not
+contradicts, the earlier §3 finding that these two lines "vary
+independently" — same additive bucket just means they add to the same
+running total, not that they're identical or redundant.
+### Derived marginal-value math, per stat category
+This is the actual work the user asked for — deriving the math instead
+of trusting a snapshot:
+- **Attack Power% / Weapon Power%** (anything that scales the `Atk`
+  term, before the `Coefficient` multiplication): a Δ% increase to Atk
+  produces **exactly the same Δ% increase to Total Damage**, full stop
+  — because Atk sits before every other multiplicative factor in the
+  formula, so scaling it scales the whole product uniformly. **This is
+  genuinely baseline-independent** — no need for the user's other stats
+  to compute this one. This explains why Attack Power/Weapon Power
+  showed the *closest* agreement (§0) between the two external
+  sources — they were measuring something that's actually
+  baseline-invariant, so of course two different builds agreed closely.
+- **Additional Damage% / Outgoing Damage%** (additive bucket, stacks
+  with Super Charge/All-Out Attack/etc. before that bucket multiplies
+  the total): if a player's current additive-bucket total is `B`
+  (e.g. B=0.65 for +65% combined from engravings/existing gear), adding
+  `ΔX` more to the bucket changes the total-damage multiplier from
+  `(1+B)` to `(1+B+ΔX)`, so the **relative damage gain is
+  `ΔX / (1+B)`** — real diminishing returns as the bucket fills up,
+  and genuinely dependent on the player's current total bucket value.
+  This is why Additional Damage showed *some* divergence between
+  sources (§0, ~3.6%) even though it was small — the two builds likely
+  had reasonably similar but not identical existing bucket totals.
+- **Crit Rate% and Crit Damage%**: `CritDamage` only applies on a crit,
+  so in expectation, `E[multiplier] = (1 - CR)×1 + CR×CD` where `CR` =
+  crit rate (0–1) and `CD` = crit damage multiplier (e.g. 2.0 for
+  +100%). Marginal value of `ΔCR` = `(CD − 1) / E[multiplier]`; marginal
+  value of `ΔCD` = `CR / E[multiplier]`. **Both depend on the player's
+  current CR and CD** — there's no way around needing these as live
+  inputs, which is exactly why these stats showed the largest divergence
+  between the two external sources (§0, 11–45%) and why no snapshot
+  table can be trusted here regardless of how recent it is.
+### What this means for implementation
+The accessory calculator needs the user's **current** stats as inputs
+(current additive-damage-bucket total, current Crit Rate, current Crit
+Damage) rather than assuming any fixed baseline — then it computes each
+candidate accessory substat's marginal %-damage-gain live, using the
+formulas above. Attack Power/Weapon Power lines need no extra input
+(baseline-independent); Additional/Outgoing Damage and Crit lines do.
 **Arsonistic table kept for reference/cross-check, not the chosen
 source.** This is **not** a universal formula — the Arsonistic DPS
 Calculator derives it by full build simulation: it computes your total
@@ -735,8 +792,26 @@ yet solved. Don't force-fit it without checking the units line up.
    open: this verified the underlying substat building blocks, not
    Cracine's specific "[5 ANCIENT]" (all-5-accessories) rows directly —
    that comparison (sum-of-5-pieces vs. Cracine's number) hasn't been
-   done yet.
-## Explicitly not done yet
+   done yet. **Superseded by item 11** — decided to stop relying on
+   either snapshot table and derive the math instead.
+11. **New, see §3:** derive accessory substat damage-gain live from the
+   sourced damage formula (Lost Ark Fandom Wiki) instead of hardcoding
+   either external table — done for the *structure* of the math
+   (Attack Power/Weapon Power are baseline-independent; Additional/
+   Outgoing Damage and Crit Rate/Crit Damage need the user's current
+   stats as live input). **Still open, real unknowns, not yet
+   confirmed:**
+   - Whether Additional Damage% and Outgoing Damage% actually share the
+     same additive bucket as Super Charge/All-Out Attack — assumed from
+     community consensus, not confirmed on the wiki page itself.
+   - The exact current-patch value of the base Crit Damage multiplier
+     (formula uses `CritDamage` as a variable, e.g. "2" in the wiki's
+     own example — need the real current baseline, not an assumed
+     round number).
+   - Whether "Attack Power%" and "Weapon Power%" truly both scale the
+     same single `Atk` term in the formula, or are distinct terms that
+     happen to behave similarly — the formula as sourced only shows one
+     `Atk` variable, worth confirming they're not secretly different.
 No code, no dashboard, no Apps Script. This file is the handoff point —
 next step for whoever (or whichever Claude) picks this up is to resolve
 the open questions above, *then* start building.
