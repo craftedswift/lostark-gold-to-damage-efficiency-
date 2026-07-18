@@ -58,8 +58,9 @@ Straight from Maxroll's live calculator — this **resolves** the earlier
 finding that no official static T4.5 table exists; Maxroll's calculator
 has it even though Smilegate's patch notes don't publish it directly.
 Transcribed from the screenshot (attempt-by-attempt, base chance shown
-`[with accumulated Artisan's Energy in brackets]`):
-| Attempt | Base chance `[Artisan's Energy]` | Gold | Col.C | Col.D | Col.E | Col.F | Col.G | Col.H (↓) | Col.I (↓) |
+`[with accumulated Artisan's Energy in brackets]`); column identities
+below are now **confirmed** (see resolution note after the table):
+| Attempt | Base chance `[Artisan's Energy]` | Gold | Shards | Fusions | Destruction | Crystal | Leapstones | Special Honing (qty ↓) | Special Honing (gold value ↓) |
 |---|---|---|---|---|---|---|---|---|---|
 | 1 | 1.50% `[0.00%]` | 150,030 | 60,000 | 10,150 | 39,840 | 47 | 4,260 | 44 | 1,701 / 572 |
 | 2 | 1.55% `[0.70%]` | 150,030 | 60,000 | 10,150 | 39,840 | 47 | 4,260 | 44 | 1,697 / 568 |
@@ -72,23 +73,38 @@ Transcribed from the screenshot (attempt-by-attempt, base chance shown
 | 9 | 1.90% `[6.23%]` | 150,030 | 60,000 | 10,150 | 39,840 | 47 | 4,260 | 44 | 1,693 / 546 |
 Totals row (all 25 levels, this weapon): Value 6,860,369 · 4,184,356 ·
 464,254 · 1,966,253 · 2,150 · 194,850 · 2,013 · 2,282.
-**Open task:** the screenshot's column icons aren't machine-readable —
-confirm exact material names for columns C–I by hovering the live
-calculator (likely Gold / Silver / Shard / Fusion Material / Destruction
-or Guardian Stone / Leapstone / breath-type items, in some order) before
-hardcoding anything. Don't guess the mapping; a wrong material name here
-corrupts every downstream cost number.
+**Resolved (previously open task):** cross-checked against the old
+Cracine/Skaitavia sheet's own per-level honing cost table (rows 18–25,
+columns Gold/Shards/Fusions/Destruction/Crystal/Leapstones) — values
+match Maxroll's "Average scenario / Full materials" output for the same
+levels. Maxroll shows two extra columns the old sheet doesn't track:
+**Silver** (leftmost, before Gold) and **Special Honing** (rightmost,
+shown as a qty/gold-value pair) — which is what the mysterious decreasing
+paired numbers in the last two columns above actually are: Special
+Honing material owned-quantity and its gold-equivalent value, both
+draining as an account-wide pool gets consumed (not a per-attempt cost,
+confirming the earlier guess). **New sub-question:** the old sheet's
+totals don't include Silver cost at all — decide whether the rebuilt
+version should price Silver in too, since it's real spend even if it's a
+secondary currency.
 **Confirmed pattern:** per-attempt base chance climbs +0.05pp per fail
 (classic Artisan's Energy pity, same shape as T1–T4), and material cost
-per attempt is flat regardless of attempt number — only the two rightmost
-running-total columns decrease, which look like a depleting
-pity-adjacent counter, not a per-attempt cost. Needs confirming against
-the live tool, not assumed.
+per attempt is flat regardless of attempt number.
 **Action for next session:** pull the same table for armor pieces and for
 other honing levels (this only covers +24→+25) directly from Maxroll's
 calculator, the same way — it's a live, current, load-bearing data source,
 so treat it as the primary T4.5 source going forward instead of waiting on
 official patch-note tables that don't exist.
+**Math-validation note:** the old sheet's honing costs appear to be a
+straight *average cost* figure (no explicit success-chance/attempts math
+shown), which is consistent with — and a valid sanity check against — the
+`expected gold = expected attempts × cost/attempt` formula above, since an
+"average scenario, full materials" total is exactly what that formula
+should produce. This is a real independent cross-check of the honing
+formula (see the open question this thread raised about validating it
+against a known source) — worth doing the same comparison for at least one
+more tier/level to build confidence before trusting the formula for tiers
+where we don't have a second reference point.
 ---
 ## 3. Accessory / engraving / bracelet / Ark Grid damage gain
 This is **not** a universal formula — the Arsonistic DPS Calculator derives
@@ -185,8 +201,11 @@ yet solved. Don't force-fit it without checking the units line up.
 ---
 ## Open questions / decisions for next session
 1. Market price field: `CurrentMinPrice` vs. an average of top-N listings?
-2. T4.5 column C–I material identities — confirm against the live Maxroll
-   tool, don't assume.
+2. ~~T4.5 column C–I material identities~~ — **resolved**, see §2: Gold /
+   Shards / Fusions / Destruction / Crystal / Leapstones / Special Honing
+   (qty + gold value), cross-checked against the old sheet and matching.
+   Follow-up: decide whether to price in Silver too (Maxroll-only column,
+   not in the old sheet's totals).
 3. Extract the Arsonistic sheet's `Calc`/`EffData` DPS formula if
    per-class/build-specific numbers are needed (vs. using their pre-baked
    table as-is).
