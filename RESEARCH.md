@@ -103,21 +103,36 @@ specifically — not a symmetric measure, just a consistent one) —
 - Weapon Power%: Arsonistic 1.03% vs. 또피셜 1.49% (gap 0.46 ÷ 1.03 = **44.7%** apart) — **notable divergence**
 - Crit Rate: Arsonistic 1.23% vs. 또피셜 1.06–1.09% (gap 0.14–0.17 ÷ 1.23 = **11.4–13.8%** apart) — **moderate divergence**
 - Crit Damage: Arsonistic 1.29% vs. 또피셜 1.45% (gap 0.16 ÷ 1.29 = **12.4%** apart) — **moderate divergence**
+**Why the divergence — the actual mechanism, not just "builds differ":**
+Arsonistic's DPS calculator computes each stat's damage-gain % by taking
+the loaded build's **base stats and base crit rate**, adding the bonus,
+and diffing total DPS. Crit Rate and Crit Damage have **strongly
+nonlinear marginal value** — the DPS impact of +1% crit rate depends
+heavily on what your crit rate already is (going from 20%→21% crit
+behaves very differently than 79%→80%, both because of the crit-chance
+curve itself and because many classes/engravings have crit-rate
+soft-caps or breakpoints). So if Arsonistic's loaded build and 또피셜's
+build started from different base crit rates, that alone — not any
+error in either source — would produce exactly the kind of moderate
+Crit Rate/Crit Damage divergence seen above. Attack Power/Weapon Power%
+are comparatively more linear, which likely explains why those two
+showed close agreement while crit-related stats didn't.
 **Conclusion — this is the real answer to "are their numbers correct":**
 two independently-built sources (different players, different exact
-builds) land in the same ballpark for most stats but disagree by
-double-digit percentages on Weapon Power% and, to a lesser extent, Crit
-Rate/Crit Damage. This isn't a sign either source is "wrong" — both
-explicitly caveat that these numbers are **build-relative marginal
-values**, not universal constants, so some spread between different
-baseline builds is expected and legitimate. **The actionable conclusion:
-don't treat any single source's damage-gain % as ground truth for an
-arbitrary user's build.** If this project reuses substat damage-gain
-numbers, it should either (a) let the user pick/confirm their own
-baseline assumptions rather than hardcoding one source's numbers, or (b)
-clearly label whichever source's numbers are used as build-specific
-estimates, not universal truth — matching what both Arsonistic and
-또피셜's own posts already say about their own numbers.
+builds, different base crit rates) land in the same ballpark for
+comparatively linear stats but disagree by double-digit percentages on
+Weapon Power% and crit-related stats, for a specific, understood reason
+(nonlinear marginal value depending on baseline crit rate) rather than
+either source being wrong. **The actionable conclusion: don't treat any
+single source's damage-gain % as ground truth for an arbitrary user's
+build** — this is especially true for crit-related stats specifically,
+where the baseline crit rate assumption matters a lot. If this project
+reuses substat damage-gain numbers, it should either (a) let the user
+pick/confirm their own baseline crit rate and stats rather than
+hardcoding one source's numbers, or (b) clearly label whichever source's
+numbers are used as build-specific estimates tied to a stated baseline
+— matching what both Arsonistic and 또피셜's own posts already say about
+their own numbers.
 **Authorship/provenance:** Made by Cracine (Twitch: cracine), crediting
 Reddit user **Skaitavia** for explanations/baseline format, and
 **Portia (포피셜)** and **Riyon (리연)** — Korean community
