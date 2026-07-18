@@ -104,6 +104,49 @@ This is now the primary source for weapon honing averages +18 through
 +25 — supersedes needing to re-derive from the attempt-by-attempt table
 below for anything except understanding *why* the average comes out that
 way (success-chance curve, pity).
+### Weapon honing, average cost per level (+16 → +25, "Average scenario / Full materials")
+Second confirmed live dataset, same weapon, with Juice included this
+time — used below to quantify the actual Juice cost premium and
+double-check the breakthrough-cost question. Note **Value ≠ Gold** here
+(unlike the no-Juice table above), because Juice itself is a
+market-priced material folded into Value but not into the raw Gold
+column:
+| Level | Value | Silver | Gold | Shards | Fusion | Destiny Stones | Leapstones | Juice |
+|---|---|---|---|---|---|---|---|---|
+| +16 | 98,955 | 1,028,753 | 52,850 | 290,425 | 244 | 22,225 | 226 | 179 |
+| +17 | 148,212 | 1,201,228 | 74,149 | 381,032 | 336 | 31,166 | 325 | 288 |
+| +18 | 154,005 | 1,281,228 | 79,942 | 411,740 | 371 | 33,599 | 348 | 288 |
+| +19 | 159,797 | 1,351,228 | 85,734 | 441,448 | 394 | 36,032 | 371 | 288 |
+| +20 | 309,942 | 1,896,613 | 171,502 | 785,065 | 799 | 72,053 | 734 | 537 |
+| +21 | 321,807 | 1,976,613 | 183,367 | 839,662 | 842 | 77,015 | 799 | 537 |
+| +22 | 486,906 | 2,790,054 | 284,709 | 1,245,440 | 1,322 | 119,546 | 1,227 | 784 |
+| +23 | 504,208 | 2,870,054 | 302,011 | 1,321,393 | 1,385 | 126,782 | 1,322 | 784 |
+| +24 | 1,052,824 | 4,184,356 | 464,254 | 1,966,253 | 2,150 | 194,850 | 2,013 | 2,282 |
+| +25 | 1,077,980 | 4,264,356 | 489,411 | 2,073,050 | 2,287 | 205,827 | 2,150 | 2,282 |
+| **Total (+16→+25)** | **4,314,632** | **22,844,479** | **2,187,925** | **9,755,503** | **10,127** | **919,090** | **9,511** | **8,244** |
+**Juice premium, quantified:** summing this table's Value column for
++18→+25 only (to match the no-Juice table's range) gives 4,067,469 gold,
+vs. 3,565,555 gold with no Juice for the same 8 levels — a **501,914
+gold premium (+14.1%) to fully use Juice**, for a build already this far
+into T4.5. This is the first real number behind "Juice costs more than
+the value it provides" — confirms the qualitative claim, though the
+actual damage/time value Juice buys (faster completion, fewer wasted
+pity resets) still isn't priced, so this is a cost figure, not yet a
+full cost-benefit comparison.
+**Breakthrough-cost finding (revises the earlier tension note):** the
+big proportional jump in both tables is actually at **+19 → +20**, not
++20 → +21 as originally assumed:
+- No-Juice: +19=129,303 → +20=257,242 (**+98.9%**); +20=257,242 →
+  +21=275,038 (only +6.9%)
+- Full-Juice: +19=159,797 → +20=309,942 (**+94.0%**); +20=309,942 →
+  +21=321,807 (only +3.8%)
+Both datasets agree: the sharp step-up happens entering +20, and +20→+21
+(previously assumed to be where breakthrough cost would show up) is a
+comparatively small increase. **Still open:** whether the +19→+20 jump
+*is* the breakthrough cost showing up one level earlier than assumed, a
+T4→T4.5 tier-entry cost unrelated to breakthrough, or something else —
+needs checking directly against Maxroll's stated breakthrough material
+list rather than inferred from the cost curve shape alone.
 ### Tier 4.5 real data (captured, weapon +24 → +25, "Average scenario / Full materials")
 Straight from Maxroll's live calculator — this **resolves** the earlier
 finding that no official static T4.5 table exists; Maxroll's calculator
@@ -123,17 +166,22 @@ Transcribed from the screenshot (attempt-by-attempt, base chance shown
 | 9 | 1.90% `[6.23%]` | 150,030 | 60,000 | 10,150 | 39,840 | 47 | 4,260 | 44 | 1,693 / 546 |
 Totals row (all 25 levels, this weapon): Value 6,860,369 · 4,184,356 ·
 464,254 · 1,966,253 · 2,150 · 194,850 · 2,013 · 2,282.
-**Resolved:** the gap between "No additional materials" (3,565,555 gold,
-+18→+25) and "Full materials" (6,860,369 gold, +24→+25 alone) is the
-**Juice toggle**, not a stockpile assumption — "No additional materials"
-= no Juice, "Full materials" = full Juice usage. The reason "No
-additional materials" is the right default for a *gold-efficiency* model:
-Juice's own gold cost exceeds the gold value of the success-chance boost
-it provides, so buying it is never optimal from a pure gold-per-%-damage
-standpoint. **Use "No additional materials" / no-Juice numbers as the
-baseline honing cost** for this project; Juice only matters if someone
-cares about *guaranteeing* a faster/more predictable outcome at a
-known gold premium, which is a different (non-optimal-spend) use case.
+**Resolved:** the gap between "No additional materials" totals and
+"Full materials" totals is the **Juice toggle**, not a stockpile
+assumption — "No additional materials" = no Juice, "Full materials" =
+full Juice usage. (Note: the 6,860,369 total directly above is summed
+across **all 25 levels, +1→+25**, for this weapon — a wider range than
+the +18→+25/+16→+25 tables elsewhere in this section, so don't compare
+it to those totals directly; use the like-for-like +18→+25 comparison in
+the next table's Juice-premium note instead.) The reason "No additional
+materials" is the right default for a *gold-efficiency* model: Juice's
+own gold cost exceeds the gold value of the success-chance boost it
+provides (quantified below: ~+14% gold for full Juice, +18→+25), so
+buying it is never optimal from a pure gold-per-%-damage standpoint.
+**Use "No additional materials" / no-Juice numbers as the baseline
+honing cost** for this project; Juice only matters if someone cares
+about *guaranteeing* a faster/more predictable outcome at a known gold
+premium, which is a different (non-optimal-spend) use case.
 **Confirmed pattern:** per-attempt base chance climbs +0.05pp per fail
 (classic Artisan's Energy pity, same shape as T1–T4), and material cost
 per attempt is flat regardless of attempt number.
@@ -257,11 +305,13 @@ yet solved. Don't force-fit it without checking the units line up.
    (success-chance booster) toggle, not a stockpile assumption. Use
    "No additional materials" (no Juice) as baseline, since Juice's gold
    cost exceeds the gold value of the chance boost it buys.
-4. **New:** breakthrough-past-+20 was assumed to have "no separate
-   gold/success-rate cost," but the +21→+25 average-cost rows scale
-   smoothly with no visible one-time jump — confirm directly what
-   breakthrough actually costs and whether it's already inside these
-   averages.
+4. **Refined:** the big cost jump isn't at +20→+21 as originally
+   assumed — both the no-Juice and full-Juice datasets show it at
+   **+19→+20** instead (~+95-99%, vs. only +4-7% at +20→+21). Still need
+   to confirm directly (against Maxroll's stated breakthrough material
+   list) whether this is breakthrough cost showing up one level earlier
+   than expected, a T4→T4.5 tier-entry cost unrelated to breakthrough, or
+   something else — don't infer further from curve shape alone.
 5. Extract the Arsonistic sheet's `Calc`/`EffData` DPS formula if
    per-class/build-specific numbers are needed (vs. using their pre-baked
    table as-is).
