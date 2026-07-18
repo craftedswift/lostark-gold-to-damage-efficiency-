@@ -528,17 +528,19 @@ recent enough to matter), quoted directly:
 ```
 Two structurally different categories of bonus, confirmed by the wiki
 itself: **additive** (stack together inside one `(1 + ... )` bucket
-before that bucket multiplies the total — e.g. Super Charge + All-Out
-Attack) vs. **multiplicative** (each bonus is its own separate `(1 + X)`
-factor — e.g. Grudge, Master Brawler). Community consensus (not
-wiki-confirmed on this specific page, flagged as an assumption to verify
-— see open questions) places accessory **Additional Damage%** and
-**Outgoing Damage%** in the same additive bucket as engravings like
-Super Charge/All-Out Attack — i.e. they sum together, they don't each
-get their own multiplicative factor. This actually **refines**, not
-contradicts, the earlier §3 finding that these two lines "vary
-independently" — same additive bucket just means they add to the same
-running total, not that they're identical or redundant.
+before that bucket multiplies the total) vs. **multiplicative** (each
+bonus is its own separate `(1 + X)` factor). **Important precision:**
+the wiki only names **All-Out Attack and Super Charge as two examples**
+of engravings that belong to the *additive* category — it does not say
+anywhere on this page that accessory Additional Damage%/Outgoing
+Damage% belong to that same bucket. That's a **separate, unconfirmed
+claim** (from general community knowledge, not this source) layered on
+top of the wiki's engraving-only list — genuinely open, not
+wiki-verified. Correctly flagged as such in the open questions below;
+don't treat it as settled. If it turns out Additional/Outgoing Damage%
+are actually multiplicative (their own `(1+X)` factor) rather than
+additive, the marginal-value formula below would need revising — this
+is the single biggest unconfirmed assumption in this section.
 ### Derived marginal-value math, per stat category
 This is the actual work the user asked for — deriving the math instead
 of trusting a snapshot:
@@ -552,9 +554,10 @@ of trusting a snapshot:
   showed the *closest* agreement (§0) between the two external
   sources — they were measuring something that's actually
   baseline-invariant, so of course two different builds agreed closely.
-- **Additional Damage% / Outgoing Damage%** (additive bucket, stacks
-  with Super Charge/All-Out Attack/etc. before that bucket multiplies
-  the total): if a player's current additive-bucket total is `B`
+- **Additional Damage% / Outgoing Damage%** (**assuming** they're in the
+  same additive bucket as engravings like Super Charge/All-Out
+  Attack — unconfirmed, see the precision note above): if a player's
+  current additive-bucket total is `B`
   (e.g. B=0.65 for +65% combined from engravings/existing gear), adding
   `ΔX` more to the bucket changes the total-damage multiplier from
   `(1+B)` to `(1+B+ΔX)`, so the **relative damage gain is
