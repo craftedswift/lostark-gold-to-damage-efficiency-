@@ -25,42 +25,68 @@ data sources first. Section-by-section status below.
 | Shizukaziye's astrogem-calculator | Open, documented, verified (JS/Python parity + DP-vs-Monte-Carlo gated) astrogem cut/fuse model, including side-node/support scoring | https://shizukaziye.github.io/astrogem-calculator/ · source: https://github.com/shizukaziye/astrogem-calculator · math: `METHODOLOGY.md` in that repo |
 | Lost Ark OpenAPI | Official live market price endpoint (`POST /markets/items`), auth via personal JWT — superseded as our chosen price source (see §1), kept here for reference/fallback | https://developer-lostark.game.onstove.com |
 | Shizukaziye's loa-deal-finder | Same author as the astrogem calculator; live "fair price" model with an outlier-resistant methodology (see §1) — the methodology (not necessarily the exact data source) is the basis for our market-price approach | https://shizukaziye.github.io/loa-deal-finder/ |
-| Lost Ark Market Online API | **Chosen market data source** (see §1). Community-run, live + historic prices, regional filters including NA East/NA West/EU Central/EU West/South America (covers global-release regions). Postman-documented. | Postman docs: https://documenter.getpostman.com/view/20821530/UyxbppKr · org: https://github.com/Lost-Ark-Market-Online |
+| Lost Ark Market Online API | Superseded — Postman docs appear deprecated/stale (see §1), replaced by LOA Buddy below. Kept for reference only. | Postman docs: https://documenter.getpostman.com/view/20821530/UyxbppKr · org: https://github.com/Lost-Ark-Market-Online |
+| LOA Buddy | **Chosen market data source** (see §1). Live site with Trade Skill + Honing Materials (incl. Additional Honing Materials/Juice) price tracking, NAE confirmed, 7d/14d/30d historical charts. Backed by a public (no-auth) Cloudflare Worker API — confirmed via live inspection, not docs. | https://loa-buddy.pages.dev · API: `marketdata-api.yrzhao1068589.workers.dev` (undocumented, reverse-engineered — see §1) |
 ---
 ## 1. Live market prices
-**Decision: use the Lost Ark Market Online API** (Postman-documented:
-https://documenter.getpostman.com/view/20821530/UyxbppKr), not the
-official Lost Ark OpenAPI, as this project's market price source. It
-offers live + historic prices with regional filters covering NA East,
-NA West, EU Central, EU West, and South America — matches this
-project's target region (NA East) and the global-release servers
-generally.
-**Caveat carried forward, don't lose track of this:** this API's
-underlying data is community-sourced via volunteer "market watchers"
-running an OCR tool (Tesseract) that screenshots their in-game market
-window — not a direct game-server scrape. That means real risk of OCR
-misreads, coverage gaps on less-watched items, and staleness; the
-project also looked lightly maintained as of this research (last major
-updates ~Feb 2024). Worth a basic sanity check (compare a handful of
-known prices against what's visible in-game or via the official OpenAPI)
-before fully trusting it as ground truth.
-**Open task (blocks implementation):** the Postman documentation page
-didn't yield endpoint/auth/schema details through automated fetching —
-someone needs to actually open
-https://documenter.getpostman.com/view/20821530/UyxbppKr in a browser
-and record: exact endpoint URLs, required auth (API key? none?), request/
-response shape, and — most importantly — whether the historic-price
-response gives enough daily granularity (ideally 14+ days) to actually
-run the fair-price trimmed-mean formula below. Nothing here is confirmed
-beyond "this API exists and covers the right regions."
-**Superseded finding, still true and worth keeping:** the *official*
-OpenAPI (`POST https://developer-lostark.game.onstove.com/markets/items`)
-exposes **no trade volume / order-book depth** — no per-listing
-quantities to smooth across, only per-item daily aggregate prices. This
-ruled out the earlier "average of top-N listings" idea. Whether the same
-limitation applies to the Lost Ark Market Online API is unconfirmed —
-check as part of the open task above; it's plausible their OCR-collected
-data has different structure entirely.
+**Decision: use LOA Buddy's market data API** (https://loa-buddy.pages.dev),
+not the official Lost Ark OpenAPI or the Lost Ark Market Online API. The
+Lost Ark Market Online Postman docs turned out to be effectively
+deprecated (couldn't confirm current endpoints/schema, site/tooling
+looked stale) — LOA Buddy replaces it as the chosen source, with actual
+confirmed technical details below rather than an untested plan.
+**How it was found — reverse-engineered from the live site, not a docs
+page:** LOA Buddy has no public API documentation. Confirmed the
+mechanism by patching `window.fetch` in the browser devtools while using
+the site (https://loa-buddy.pages.dev/materials and its "Market Tracker"
+→ "Honing Materials" view) and by direct `curl` testing of the endpoints
+found that way. This is an **undocumented third-party API** — nothing
+here is a stable public contract, it could change or break without
+notice. Treat this section as "how it works today," not a guarantee.
+**Confirmed endpoints** (Cloudflare Worker at
+`marketdata-api.yrzhao1068589.workers.dev`, no auth/API key required):
+- `POST /v1/prices/latest` — body `{"region_slug": "nae", "item_slugs": ["wild-flower", ...]}`
+  (batched, multiple items per call) → returns
+  `[{"item_slug": "...", "price": N, "timestamp": <unix seconds>}]`,
+  one current price per item.
+- `GET /v1/prices/historical/{region_slug}/{item_slug}?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD`
+  → returns `[{"day": "YYYY-MM-DD", "min_price": N, "max_price": N, "avg_price": N}]`,
+  **one row per day**. The site's own UI offers 7d/14d/30d chart ranges,
+  confirming **at least 30 days of daily history is available** — more
+  than enough for the 14-day fair-price formula in this section.
+- Item slugs are simple kebab-case of the display name (confirmed
+  examples: "Crystallized Destruction Stone" → `crystallized-destruction-stone`,
+  "Destiny Shard Pouch (L)" → `destiny-shard-pouch-l`, "Wild Flower" →
+  `wild-flower`). Exact slugs for our specific honing materials (Shards,
+  Fusion Materials, Destiny Guardian/Destruction Stone, Leapstones,
+  Juice) still need to be looked up one by one on the live site — not
+  enumerated yet, but the naming pattern is established.
+- Region param confirmed working: `"nae"` (North America East, this
+  project's target). Other regions likely follow the same pattern
+  (`"naw"`, etc.) but not individually tested.
+**Independent validation of an earlier decision:** LOA Buddy's own
+material list uses **"Destiny Guardian Stone"** and **"Destiny
+Destruction Stone"** as separate named items — this independently
+confirms the Guardian-Stone-for-armor / Destruction-Stone-for-weapon
+split already documented in §2, from a completely different source than
+where that naming came from originally. Good cross-check.
+**Blocker — CORS, confirmed by direct testing (not assumed):** tested
+the Worker directly with `curl`, sending different `Origin` headers.
+Result: `Access-Control-Allow-Origin` is only returned when
+`Origin: https://loa-buddy.pages.dev` is sent — tested with a generic
+foreign origin and with what would be our own site's likely GitHub
+Pages origin, and both got **no CORS header back**, meaning a real
+browser would block the request. **This means we cannot call this API
+directly from our own frontend** — same class of problem already noted
+for the official OpenAPI. Needs a relay: either our own small Cloudflare
+Worker/serverless proxy (same pattern Shizukaziye uses for the official
+API), or fetching server-side instead of client-side.
+**Not yet checked:** whether hitting this undocumented API at any real
+volume triggers rate limiting or is against the (nonexistent, since
+there's no public ToS) spirit of a small community tool — worth being a
+polite, low-frequency consumer (e.g. cache prices for a day, don't poll
+constantly) given this is someone's personal/hobby infrastructure, not a
+funded public API.
 **Resolved — pricing methodology (adopted from Shizukaziye's
 loa-deal-finder, same author/data source as the astrogem calculator):**
 use a **"fair price"** derived from recent daily averages, not a single
@@ -97,18 +123,13 @@ recency-weighting formula and the "couple" of high/low days trimmed —
 the screenshot description is close enough to replicate roughly, but not
 precise enough to hardcode without checking, the same caution as the
 astrogem model.
-**Known blocker (official OpenAPI, kept for reference/fallback):** the
-API likely doesn't send CORS headers for arbitrary browser origins.
-Shizukaziye's project works around an equivalent problem with a small
-Cloudflare Worker relay (see their `worker/` folder). **Unconfirmed
-whether this applies to the Lost Ark Market Online API too** — check as
-part of the open task above; a community-run API aimed at public
-consumption may already allow CORS, but don't assume it.
-**Getting access (official OpenAPI, kept for reference/fallback):** sign
-in at the developer portal with your Steam/Stove login → Create Client →
-copy the JWT from "My Clients." Free, instant, personal (don't commit it
-to a public repo). **Whether the Lost Ark Market Online API needs its own
-API key/auth is unconfirmed** — part of the open task above.
+**Official OpenAPI, kept for reference/fallback only (not the chosen
+source):** likely doesn't send CORS headers for arbitrary browser
+origins either. Getting access: sign in at the developer portal with
+your Steam/Stove login → Create Client → copy the JWT from "My Clients."
+Free, instant, personal (don't commit it to a public repo). Only
+relevant if LOA Buddy's API becomes unusable (breaks, rate-limits us,
+disappears) and a fallback is needed.
 ---
 ## 2. Honing — general math (applies to every tier)
 For a per-attempt success chance `p`:
@@ -418,13 +439,18 @@ yet solved. Don't force-fit it without checking the units line up.
    rest) instead of picking a single raw API field. Follow-up: find their
    exact methodology doc to confirm precise weighting/trim parameters
    before hardcoding.
-1b. **New — data source decision:** use the **Lost Ark Market Online API**
-   (Postman-documented) instead of the official Lost Ark OpenAPI for
-   market prices — covers NA East and the other global-release regions.
-   **Not yet done:** actually opening the Postman docs and recording
-   endpoints/auth/schema, and confirming it has enough daily history
-   depth to run the fair-price formula from item 1. This blocks any real
-   implementation and should be the first thing next session.
+1b. ~~Data source decision~~ — **resolved and confirmed**, see §1: the
+   Lost Ark Market Online Postman API turned out to be effectively
+   deprecated, so switched to **LOA Buddy** (https://loa-buddy.pages.dev),
+   reverse-engineered by inspecting live network traffic. Endpoints,
+   request/response schema, no-auth confirmation, ≥30-day history depth,
+   and item-slug pattern are all confirmed directly (not assumed).
+   **Still open:** (a) it's undocumented third-party infra with no
+   stability guarantee, (b) **CORS is confirmed blocking** direct
+   frontend calls from our own site (tested directly) — needs a relay
+   Worker/serverless proxy before this can actually be called from the
+   built site, (c) exact item slugs for our specific honing materials
+   aren't enumerated yet, just the naming pattern.
 2. ~~T4.5 column identities~~ — **resolved**, see §2: Silver (ignore) /
    Gold (fixed) / Shards / Fusion Materials / Destiny Stones /
    Leapstones (all four market-priced) / Juice (optional success-chance
